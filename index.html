@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-  <title>Glow Clinic — AR Experience</title>
+  <title>Glow Clinic — חוויית AR</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
@@ -22,7 +22,7 @@
       object-fit: cover;
     }
 
-    /* 3D Canvas — transparent overlay */
+    /* 3D Canvas */
     #ar-canvas {
       position: fixed; inset: 0; z-index: 1;
       width: 100%; height: 100%;
@@ -34,21 +34,36 @@
       background: linear-gradient(135deg, #0a0a0f 0%, #1a0f15 50%, #0a0a0f 100%);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      transition: opacity 1s ease;
+      transition: opacity 1.2s ease;
     }
     #loading.hidden { opacity: 0; pointer-events: none; }
+
+    .loader-container { position: relative; width: 100px; height: 100px; }
     .loader-ring {
-      width: 70px; height: 70px;
-      border: 3px solid rgba(183, 110, 121, 0.15);
+      position: absolute; inset: 0;
+      border: 2px solid rgba(183, 110, 121, 0.1);
       border-top-color: #B76E79;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
-    .loader-text { margin-top: 20px; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #B76E79; }
+    .loader-ring-2 {
+      position: absolute; inset: 10px;
+      border: 2px solid rgba(183, 110, 121, 0.05);
+      border-bottom-color: #D4A0A7;
+      border-radius: 50%;
+      animation: spin 1.5s linear infinite reverse;
+    }
+    .loader-logo {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-family: Georgia, serif;
+      color: #B76E79; font-weight: 200;
+    }
+    .loader-text { margin-top: 20px; font-size: 12px; letter-spacing: 4px; text-transform: uppercase; color: #B76E79; }
     .loader-sub { margin-top: 8px; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* No-camera banner (non-blocking) */
+    /* No-camera banner */
     #no-camera-banner {
       display: none;
       position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
@@ -88,7 +103,7 @@
     @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 10px rgba(183,110,121,0.6); } 50% { box-shadow: 0 0 20px rgba(183,110,121,0.2); } }
     .badge-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #B76E79; }
 
-    /* Center — clinic name floating */
+    /* Center float */
     .center-float {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
@@ -105,13 +120,12 @@
     .clinic-name span { color: #B76E79; font-weight: 300; }
     @keyframes name-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     .clinic-tagline {
-      font-size: 11px; letter-spacing: 5px; text-transform: uppercase;
+      font-size: 12px; letter-spacing: 4px;
       color: rgba(183,110,121,0.7); margin-top: 6px;
       text-shadow: 0 1px 6px rgba(0,0,0,0.5);
-      direction: ltr;
     }
 
-    /* Info card — glassmorphism */
+    /* Info card */
     .info-card {
       background: rgba(10, 10, 15, 0.5);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -120,13 +134,12 @@
       margin-top: 20px; text-align: center;
       max-width: 340px; pointer-events: auto;
       animation: card-up 0.8s ease-out 0.5s backwards;
-      direction: ltr;
     }
     @keyframes card-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .info-card .owner-name { font-size: 18px; font-weight: 300; }
-    .info-card .owner-title { font-size: 10px; color: #B76E79; margin-top: 3px; letter-spacing: 2px; text-transform: uppercase; }
+    .info-card .owner-title { font-size: 10px; color: #B76E79; margin-top: 3px; letter-spacing: 2px; }
     .info-divider { width: 40px; height: 1px; background: linear-gradient(to right, transparent, #B76E79, transparent); margin: 10px auto; }
-    .info-card .services { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; line-height: 1.5; }
+    .info-card .services { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; line-height: 1.8; }
 
     /* Bottom panel */
     .bottom-panel {
@@ -142,33 +155,22 @@
       border-radius: 16px; padding: 12px 18px;
       margin-bottom: 14px; text-align: center;
       animation: fade-in 0.6s ease-out 2s backwards;
-      direction: ltr;
     }
     .speech-bubble p {
-      font-size: 13px; color: rgba(255,255,255,0.8);
-      font-weight: 300; line-height: 1.5;
+      font-size: 14px; color: rgba(255,255,255,0.85);
+      font-weight: 300; line-height: 1.6;
     }
     .speech-bubble .speaker { font-size: 10px; color: #B76E79; margin-bottom: 4px; letter-spacing: 1px; }
     @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-    /* Social bar */
-    .social-bar { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
-    .social-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .social-btn {
-      width: 46px; height: 46px; border-radius: 50%; border: none;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all 0.3s; text-decoration: none;
+    /* 3D Social icons label */
+    .social-3d-hint {
+      text-align: center; margin-bottom: 8px;
+      font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 2px;
     }
-    .social-btn:active { transform: scale(0.9); }
-    .social-label { font-size: 8px; color: rgba(255,255,255,0.3); }
-    .btn-ig { background: linear-gradient(135deg, #833AB4, #FD1D1D, #F77737); }
-    .btn-wa { background: #25D366; }
-    .btn-phone { background: rgba(183,110,121,0.2); border: 1px solid rgba(183,110,121,0.3); }
-    .btn-web { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
-    .btn-vcard { background: rgba(183,110,121,0.12); border: 1px solid rgba(183,110,121,0.25); }
 
     /* Action row */
-    .action-row { display: flex; gap: 8px; justify-content: center; }
+    .action-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
     .action-btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 10px 20px; border-radius: 100px;
@@ -177,11 +179,41 @@
     }
     .action-btn.primary { background: #B76E79; color: white; border: none; }
     .action-btn.secondary { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.12); }
+    .action-btn:active { transform: scale(0.95); }
 
     .footer-text {
       text-align: center; margin-top: 10px;
       font-size: 8px; letter-spacing: 2px;
       color: rgba(255,255,255,0.12); text-transform: uppercase; direction: ltr;
+    }
+
+    /* Video modal */
+    #video-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    #video-modal.show { display: flex; }
+    .video-wrapper {
+      width: 90vw; max-width: 480px;
+      aspect-ratio: 16/9;
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 0 60px rgba(183,110,121,0.3);
+      background: #1a0f15;
+      animation: video-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes video-pop { from { transform: scale(0.3) rotate(-10deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+    .video-wrapper video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .video-close {
+      margin-top: 20px; padding: 10px 30px;
+      border-radius: 100px; border: 1px solid rgba(183,110,121,0.3);
+      background: rgba(183,110,121,0.15); color: #B76E79;
+      font-size: 12px; letter-spacing: 1px; cursor: pointer;
     }
 
     /* SVG icon helper */
@@ -192,13 +224,17 @@
 
   <!-- Loading Screen -->
   <div id="loading">
-    <div class="loader-ring"></div>
+    <div class="loader-container">
+      <div class="loader-ring"></div>
+      <div class="loader-ring-2"></div>
+      <div class="loader-logo">G</div>
+    </div>
     <div class="loader-text">Glow Clinic</div>
-    <div class="loader-sub">Initializing AR Camera...</div>
+    <div class="loader-sub">מפעילה חוויית מציאות רבודה...</div>
   </div>
 
-  <!-- No Camera Banner (non-blocking) -->
-  <div id="no-camera-banner">AR works best with camera — tap to enable</div>
+  <!-- No Camera Banner -->
+  <div id="no-camera-banner">חוויית AR מיטבית עם מצלמה — לחצי להפעלה</div>
 
   <!-- Camera Video Feed -->
   <video id="camera-feed" autoplay playsinline muted></video>
@@ -211,81 +247,54 @@
     <div class="top-bar">
       <div class="clinic-badge">
         <div class="badge-glow"></div>
-        <span class="badge-label">AR Live</span>
+        <span class="badge-label">AR פעיל</span>
       </div>
     </div>
 
     <div class="center-float">
       <div class="clinic-name"><span>Glow</span> Clinic</div>
-      <div class="clinic-tagline">Beauty &amp; Skincare Studio</div>
+      <div class="clinic-tagline">סטודיו לטיפוח ויופי</div>
 
       <div class="info-card">
-        <div class="owner-name">Dr. Maya Cohen</div>
-        <div class="owner-title">Founder &amp; Lead Aesthetician</div>
+        <div class="owner-name">ד״ר מאיה כהן</div>
+        <div class="owner-title">מייסדת ומנהלת מקצועית</div>
         <div class="info-divider"></div>
         <div class="services">
-          Facial Treatments · Skin Rejuvenation · Anti-Aging<br>
-          Laser Therapy · Hydrafacial · Dermaplaning
+          טיפולי פנים · חידוש העור · אנטי-אייג׳ינג<br>
+          טיפולי לייזר · הידרהפייסל · דרמפלנינג
         </div>
       </div>
     </div>
 
     <div class="bottom-panel">
       <div class="speech-bubble" id="speech-bubble">
-        <div class="speaker">Dr. Maya</div>
-        <p id="speech-text">Welcome to Glow Clinic! I specialize in advanced skincare treatments for radiant, youthful skin.</p>
+        <div class="speaker">ד״ר מאיה</div>
+        <p id="speech-text">ברוכות הבאות לגלואו קליניק! אני מתמחה בטיפולי עור מתקדמים לעור זוהר וצעיר.</p>
       </div>
 
-      <div class="social-bar">
-        <div class="social-item">
-          <a class="social-btn btn-ig" href="https://instagram.com/glowclinic" target="_blank">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          </a>
-          <span class="social-label">Instagram</span>
-        </div>
-        <div class="social-item">
-          <a class="social-btn btn-wa" href="https://wa.me/972501234567" target="_blank">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          </a>
-          <span class="social-label">WhatsApp</span>
-        </div>
-        <div class="social-item">
-          <a class="social-btn btn-phone" href="tel:+972501234567">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="#B76E79"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
-          </a>
-          <span class="social-label">Call</span>
-        </div>
-        <div class="social-item">
-          <a class="social-btn btn-web" href="https://glowclinic.co.il" target="_blank">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-          </a>
-          <span class="social-label">Website</span>
-        </div>
-        <div class="social-item">
-          <button class="social-btn btn-vcard" onclick="downloadVCard()">
-            <svg class="icon-svg" viewBox="0 0 24 24" fill="#B76E79"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
-          </button>
-          <span class="social-label">Save</span>
-        </div>
-      </div>
+      <div class="social-3d-hint">לחצי על האובייקטים התלת-מימדיים למטה ↓</div>
 
       <div class="action-row">
-        <a class="action-btn primary" href="https://wa.me/972501234567?text=%D7%94%D7%99%D7%99%20%D7%A8%D7%90%D7%99%D7%AA%D7%99%20%D7%90%D7%AA%20%D7%94%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20AR%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%95%D7%A2%20%D7%AA%D7%95%D7%A8" target="_blank">Book Now</a>
-        <a class="action-btn secondary" href="https://glowclinic.co.il" target="_blank">Our Website</a>
+        <a class="action-btn primary" href="https://wa.me/972501234567?text=%D7%94%D7%99%D7%99%20%D7%A8%D7%90%D7%99%D7%AA%D7%99%20%D7%90%D7%AA%20%D7%94%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20AR%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%95%D7%A2%20%D7%AA%D7%95%D7%A8" target="_blank">📅 לקביעת תור</a>
+        <a class="action-btn secondary" href="https://glowclinic.co.il" target="_blank">🌐 לאתר שלנו</a>
+        <button class="action-btn secondary" onclick="downloadVCard()" style="border: 1px solid rgba(183,110,121,0.25);">💾 שמירת איש קשר</button>
       </div>
 
       <div class="footer-text">Powered by JoyaTech · AR Business Card</div>
     </div>
   </div>
 
+  <!-- Video Modal -->
+  <div id="video-modal">
+    <div class="video-wrapper">
+      <video id="demo-video" playsinline></video>
+    </div>
+    <button class="video-close" onclick="closeVideo()">✕ סגירה</button>
+  </div>
+
   <!-- Three.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
-    // ==========================================
-    // GLOW CLINIC — WebAR with Camera
-    // Rose Gold + White | 3D Talking Avatar
-    // ==========================================
-
     const ROSE = 0xB76E79;
     const ROSE_LIGHT = 0xD4A0A7;
     const CREAM = 0xFFF5F0;
@@ -297,153 +306,114 @@
     const LIP = 0xC45B6E;
     const EYE_WHITE = 0xFAFAFA;
     const IRIS = 0x4A7043;
+    const WA_GREEN = 0x25D366;
+    const FB_BLUE = 0x1877F2;
+    const IG_PURPLE = 0xC13584;
+    const GLOBE_CYAN = 0x4FC3F7;
 
     let scene, camera, renderer, clock;
-    let avatar, avatarGroup;
-    let mouthMesh, leftEyeLid, rightEyeLid;
+    let avatarGroup, mouthMesh, leftEyeLid, rightEyeLid;
+    let upperLipMesh, lowerLipMesh;
     let floatingObjects = [];
     let particleSystems = [];
+    let socialIcons = [];
+    let videoPlayObj = null;
     let speechIndex = 0;
     let gyroEnabled = false;
     let deviceAlpha = 0, deviceBeta = 0, deviceGamma = 0;
+    let raycaster, tapMouse;
+    let introAnimDone = false;
+    let entranceT = 0;
 
     const speeches = [
-      "Welcome to Glow Clinic! I specialize in advanced skincare treatments for radiant, youthful skin.",
-      "Our signature Hydrafacial treatment deeply cleanses and rejuvenates your skin in just 30 minutes.",
-      "We use only premium organic products. Your skin deserves the best care possible.",
-      "Book your free consultation today! Tap the WhatsApp button below to get started.",
-      "Anti-aging doesn't have to be complicated. Let me create a personalized plan just for you."
+      "ברוכות הבאות לגלואו קליניק! אני מתמחה בטיפולי עור מתקדמים לעור זוהר וצעיר.",
+      "טיפול ההידרהפייסל שלנו מנקה ומחדש את העור בעומק תוך 30 דקות בלבד.",
+      "אנחנו משתמשות רק במוצרים אורגניים פרימיום. העור שלך מגיע לו את הטוב ביותר.",
+      "קבעי ייעוץ חינם עוד היום! לחצי על כפתור הוואטסאפ למטה כדי להתחיל.",
+      "אנטי-אייג׳ינג לא חייב להיות מסובך. בואי ניצור תוכנית טיפולים אישית רק בשבילך."
     ];
 
-    // === CAMERA SETUP ===
-    // Priority: rear camera (environment) → any camera → fallback dark bg
     async function initCamera() {
       const video = document.getElementById('camera-feed');
-
-      // Check if getUserMedia is available (HTTPS required)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.warn('getUserMedia not supported — fallback mode');
         video.style.display = 'none';
         document.body.style.background = 'linear-gradient(135deg, #0a0a0f, #1a0f15)';
         return false;
       }
-
-      // Attempt 1: rear camera (environment) — what we want
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false
         });
-        video.srcObject = stream;
-        await video.play();
-        console.log('Rear camera active');
-        return true;
-      } catch (err) {
-        console.warn('Rear camera attempt failed:', err.name);
-      }
-
-      // Attempt 2: any available camera (no facingMode constraint)
+        video.srcObject = stream; await video.play(); return true;
+      } catch (e) { console.warn('Rear cam failed:', e.name); }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
         });
-        video.srcObject = stream;
-        await video.play();
-        console.log('Generic camera active');
-        return true;
-      } catch (err2) {
-        console.warn('Generic camera failed:', err2.name);
-      }
-
-      // Attempt 3: minimal constraints
+        video.srcObject = stream; await video.play(); return true;
+      } catch (e) { console.warn('Generic cam failed:', e.name); }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        await video.play();
-        console.log('Minimal camera active');
-        return true;
-      } catch (err3) {
-        console.error('All camera attempts failed:', err3.name);
-        // Fallback: hide video, show dark gradient bg
+        video.srcObject = stream; await video.play(); return true;
+      } catch (e) {
         video.style.display = 'none';
         document.body.style.background = 'linear-gradient(135deg, #0a0a0f 0%, #1a0f15 50%, #0a0a0f 100%)';
-        // Don't show blocking error — 3D scene works without camera
         return false;
       }
     }
 
-    // === GYROSCOPE ===
     function initGyro() {
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // iOS 13+
         document.body.addEventListener('click', function handler() {
-          DeviceOrientationEvent.requestPermission().then(state => {
-            if (state === 'granted') { enableGyro(); }
-          });
+          DeviceOrientationEvent.requestPermission().then(s => { if (s === 'granted') enableGyro(); });
           document.body.removeEventListener('click', handler);
         }, { once: true });
-      } else {
-        enableGyro();
-      }
+      } else { enableGyro(); }
     }
-
     function enableGyro() {
-      window.addEventListener('deviceorientation', (e) => {
+      window.addEventListener('deviceorientation', e => {
         gyroEnabled = true;
-        deviceAlpha = e.alpha || 0;
-        deviceBeta = e.beta || 0;
-        deviceGamma = e.gamma || 0;
+        deviceAlpha = e.alpha || 0; deviceBeta = e.beta || 0; deviceGamma = e.gamma || 0;
       });
     }
 
-    // === THREE.JS SCENE ===
     function initScene() {
       clock = new THREE.Clock();
-
       scene = new THREE.Scene();
-      // No background — camera shows through
-
       camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(0, 0.8, 4);
+      camera.position.set(0, 0.8, 4.5);
       camera.lookAt(0, 0.5, 0);
-
       renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('ar-canvas'), alpha: true, antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setClearColor(0x000000, 0);
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.3;
+      renderer.toneMappingExposure = 1.4;
 
-      // Lighting for AR look
-      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+      const key = new THREE.DirectionalLight(0xffffff, 1.0);
+      key.position.set(3, 5, 5); scene.add(key);
+      const front = new THREE.DirectionalLight(0xffffff, 0.5);
+      front.position.set(0, 2, 6); scene.add(front);
+      const roseLight = new THREE.PointLight(ROSE, 0.9, 15);
+      roseLight.position.set(-2, 3, 2); scene.add(roseLight);
+      const fill = new THREE.PointLight(0xffffff, 0.4, 10);
+      fill.position.set(2, 1, 4); scene.add(fill);
+      const rim = new THREE.PointLight(ROSE_LIGHT, 0.5, 8);
+      rim.position.set(-3, 2, -2); scene.add(rim);
 
-      const key = new THREE.DirectionalLight(0xffffff, 0.9);
-      key.position.set(3, 5, 5);
-      key.castShadow = false;
-      scene.add(key);
+      raycaster = new THREE.Raycaster();
+      tapMouse = new THREE.Vector2();
 
-      const rose = new THREE.PointLight(ROSE, 0.8, 15);
-      rose.position.set(-2, 3, 2);
-      scene.add(rose);
-
-      const fill = new THREE.PointLight(0xffffff, 0.3, 10);
-      fill.position.set(2, 1, 4);
-      scene.add(fill);
-
-      // Build everything
       createAvatar();
+      create3DSocialIcons();
+      createVideoPlayButton();
       createFloatingDecor();
       createSparkles();
+      createGlowRays();
 
-      // Responsive
       window.addEventListener('resize', onResize);
-
-      // Touch/mouse for camera movement
       let touchX = 0, touchY = 0;
       document.addEventListener('touchmove', e => {
         touchX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
@@ -453,305 +423,406 @@
         touchX = (e.clientX / window.innerWidth - 0.5) * 2;
         touchY = (e.clientY / window.innerHeight - 0.5) * 2;
       });
-
-      // Speech rotation
-      setInterval(cycleSpeech, 5000);
-
+      const canvas = document.getElementById('ar-canvas');
+      canvas.addEventListener('click', onTap);
+      canvas.addEventListener('touchend', e => {
+        if (e.changedTouches.length > 0) {
+          const t = e.changedTouches[0];
+          onTapAt(t.clientX, t.clientY);
+        }
+      });
+      setInterval(cycleSpeech, 5500);
       window._touchX = 0; window._touchY = 0;
       setInterval(() => { window._touchX = touchX; window._touchY = touchY; }, 16);
     }
 
-    // === 3D AVATAR — Stylized Woman ===
+    function onTap(e) { onTapAt(e.clientX, e.clientY); }
+    function onTapAt(x, y) {
+      tapMouse.x = (x / window.innerWidth) * 2 - 1;
+      tapMouse.y = -(y / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(tapMouse, camera);
+      const socialMeshes = socialIcons.map(s => s.mesh);
+      if (videoPlayObj) socialMeshes.push(videoPlayObj.mesh);
+      const hits = raycaster.intersectObjects(socialMeshes, true);
+      if (hits.length > 0) {
+        const hitObj = hits[0].object;
+        for (const si of socialIcons) {
+          if (si.mesh === hitObj || si.mesh.children.includes(hitObj)) {
+            window.open(si.url, '_blank');
+            si.clickPulse = 1.0;
+            return;
+          }
+        }
+        if (videoPlayObj && (videoPlayObj.mesh === hitObj || videoPlayObj.mesh.children.includes(hitObj))) {
+          openVideo();
+          return;
+        }
+      }
+    }
+
     function createAvatar() {
       avatarGroup = new THREE.Group();
       avatarGroup.position.set(0, -0.3, 0);
+      avatarGroup.position.y = -3;
+      avatarGroup.scale.set(0.01, 0.01, 0.01);
 
-      // --- Head ---
-      const headGeo = new THREE.SphereGeometry(0.3, 32, 32);
-      headGeo.scale(1, 1.15, 1);
-      const headMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7, metalness: 0.05 });
-      const head = new THREE.Mesh(headGeo, headMat);
-      head.position.y = 1.55;
-      avatarGroup.add(head);
+      const skinMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.6, metalness: 0.05 });
+      const skinDarkMat = new THREE.MeshStandardMaterial({ color: SKIN_DARK, roughness: 0.65, metalness: 0.05 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_DARK, roughness: 0.75, metalness: 0.1 });
+      const hairLightMat = new THREE.MeshStandardMaterial({ color: HAIR_LIGHT, roughness: 0.65 });
+      const lipMat = new THREE.MeshStandardMaterial({ color: LIP, roughness: 0.4, metalness: 0.1 });
+      const coatMat = new THREE.MeshStandardMaterial({ color: 0xFAFAFA, roughness: 0.6, metalness: 0.05 });
 
-      // --- Hair ---
-      const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_DARK, roughness: 0.8, metalness: 0.1 });
+      const headGeo = new THREE.SphereGeometry(0.32, 48, 48);
+      headGeo.scale(1, 1.12, 1);
+      const head = new THREE.Mesh(headGeo, skinMat);
+      head.position.y = 1.58; avatarGroup.add(head);
 
-      // Hair top
-      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.32, 32, 32), hairMat);
-      hairTop.scale.set(1.05, 0.9, 1.05);
-      hairTop.position.set(0, 1.7, -0.02);
-      avatarGroup.add(hairTop);
-
-      // Hair back (long)
-      const hairBack = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.18, 0.8, 16), hairMat);
-      hairBack.position.set(0, 1.15, -0.12);
-      avatarGroup.add(hairBack);
-
-      // Hair sides
+      const cheekMat = new THREE.MeshStandardMaterial({ color: 0xF0B0B0, roughness: 0.7, metalness: 0.0, transparent: true, opacity: 0.5 });
       [-1, 1].forEach(side => {
-        const hairSide = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), hairMat);
-        hairSide.scale.set(0.6, 1.2, 0.8);
-        hairSide.position.set(side * 0.25, 1.45, 0.05);
-        avatarGroup.add(hairSide);
+        const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), cheekMat);
+        cheek.scale.set(1.3, 0.8, 0.5);
+        cheek.position.set(side * 0.15, 1.49, 0.23);
+        avatarGroup.add(cheek);
       });
 
-      // Hair bangs
-      const bangsMat = new THREE.MeshStandardMaterial({ color: HAIR_LIGHT, roughness: 0.7 });
-      const bangs = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), bangsMat);
-      bangs.scale.set(1, 0.3, 0.5);
-      bangs.position.set(0.05, 1.72, 0.2);
-      avatarGroup.add(bangs);
+      const chin = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), skinMat);
+      chin.scale.set(1, 0.6, 0.7); chin.position.set(0, 1.37, 0.18); avatarGroup.add(chin);
 
-      // --- Eyes ---
+      const forehead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), skinMat);
+      forehead.scale.set(1.4, 0.5, 0.6); forehead.position.set(0, 1.72, 0.12); avatarGroup.add(forehead);
+
+      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.35, 48, 48), hairMat);
+      hairTop.scale.set(1.05, 0.85, 1.05); hairTop.position.set(0, 1.75, -0.02); avatarGroup.add(hairTop);
+
+      const hairBack = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.15, 0.9, 24), hairMat);
+      hairBack.position.set(0, 1.12, -0.14); avatarGroup.add(hairBack);
+
+      for (let i = 0; i < 5; i++) {
+        const strand = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04 + Math.random() * 0.03, 0.02, 0.5 + Math.random() * 0.3, 8),
+          i % 2 === 0 ? hairMat : hairLightMat
+        );
+        strand.position.set(-0.15 + i * 0.08, 0.85, -0.12 + Math.random() * 0.05);
+        strand.rotation.z = (Math.random() - 0.5) * 0.2;
+        avatarGroup.add(strand);
+      }
+
+      [-1, 1].forEach(side => {
+        const hairSide = new THREE.Mesh(new THREE.SphereGeometry(0.18, 24, 24), hairMat);
+        hairSide.scale.set(0.55, 1.3, 0.85); hairSide.position.set(side * 0.27, 1.45, 0.04); avatarGroup.add(hairSide);
+        const sideFlow = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.4, 12), hairMat);
+        sideFlow.position.set(side * 0.3, 1.2, 0.05); sideFlow.rotation.z = side * 0.15; avatarGroup.add(sideFlow);
+      });
+
+      for (let i = 0; i < 3; i++) {
+        const bangMat = i === 0 ? hairLightMat : hairMat;
+        const bang = new THREE.Mesh(new THREE.SphereGeometry(0.15 + i * 0.03, 16, 16), bangMat);
+        bang.scale.set(1.2 - i * 0.1, 0.25, 0.5);
+        bang.position.set(0.05 - i * 0.04, 1.74 - i * 0.02, 0.2 + i * 0.02);
+        avatarGroup.add(bang);
+      }
+
       const eyeMat = new THREE.MeshBasicMaterial({ color: EYE_WHITE });
-      const irisMat = new THREE.MeshBasicMaterial({ color: IRIS });
+      const irisMat = new THREE.MeshStandardMaterial({ color: IRIS, roughness: 0.3, metalness: 0.2 });
       const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
 
       [-1, 1].forEach(side => {
-        // Eye white
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), eyeMat);
-        eye.scale.set(1.3, 0.9, 0.5);
-        eye.position.set(side * 0.1, 1.58, 0.25);
-        avatarGroup.add(eye);
-
-        // Iris
-        const iris = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), irisMat);
-        iris.position.set(side * 0.1, 1.58, 0.28);
-        avatarGroup.add(iris);
-
-        // Pupil
-        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), pupilMat);
-        pupil.position.set(side * 0.1, 1.58, 0.29);
-        avatarGroup.add(pupil);
-
-        // Eyelid (for blink)
-        const lidMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 });
-        const lid = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), lidMat);
-        lid.scale.set(1.2, 0.8, 0.5);
-        lid.position.set(side * 0.1, 1.6, 0.24);
-        lid.rotation.x = Math.PI;
-        lid.visible = false;
+        const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.06, 24, 24), eyeMat);
+        eyeW.scale.set(1.4, 0.85, 0.5); eyeW.position.set(side * 0.105, 1.58, 0.26); avatarGroup.add(eyeW);
+        const iris = new THREE.Mesh(new THREE.SphereGeometry(0.035, 24, 24), irisMat);
+        iris.position.set(side * 0.105, 1.58, 0.29); avatarGroup.add(iris);
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.018, 16, 16), pupilMat);
+        pupil.position.set(side * 0.105, 1.58, 0.31); avatarGroup.add(pupil);
+        const glint = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        glint.position.set(side * 0.095, 1.595, 0.315); avatarGroup.add(glint);
+        const crease = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.003, 8, 16, Math.PI), new THREE.MeshStandardMaterial({ color: SKIN_DARK, roughness: 0.8 }));
+        crease.position.set(side * 0.105, 1.62, 0.25); crease.rotation.x = 0.2; crease.rotation.z = side * 0.1; avatarGroup.add(crease);
+        for (let l = 0; l < 5; l++) {
+          const lash = new THREE.Mesh(new THREE.CylinderGeometry(0.001, 0.001, 0.02, 4), new THREE.MeshBasicMaterial({ color: 0x1a1a1a }));
+          const angle = -0.4 + l * 0.2;
+          lash.position.set(side * 0.105 + Math.cos(angle) * 0.05 * side, 1.62 + Math.sin(angle) * 0.01, 0.27);
+          lash.rotation.z = side * (0.3 + l * 0.1); lash.rotation.x = -0.3; avatarGroup.add(lash);
+        }
+        const lidMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.6 });
+        const lid = new THREE.Mesh(new THREE.SphereGeometry(0.065, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), lidMat);
+        lid.scale.set(1.3, 0.75, 0.5); lid.position.set(side * 0.105, 1.61, 0.25); lid.rotation.x = Math.PI; lid.visible = false;
         avatarGroup.add(lid);
-        if (side === -1) leftEyeLid = lid;
-        else rightEyeLid = lid;
-
-        // Eyebrow
-        const browGeo = new THREE.CylinderGeometry(0.002, 0.002, 0.08, 8);
-        const browMat = new THREE.MeshBasicMaterial({ color: HAIR_DARK });
-        const brow = new THREE.Mesh(browGeo, browMat);
-        brow.rotation.z = Math.PI / 2 + side * 0.15;
-        brow.position.set(side * 0.1, 1.66, 0.26);
-        avatarGroup.add(brow);
+        if (side === -1) leftEyeLid = lid; else rightEyeLid = lid;
+        const browGeo = new THREE.CylinderGeometry(0.003, 0.002, 0.09, 8);
+        const browMat2 = new THREE.MeshBasicMaterial({ color: HAIR_DARK });
+        const brow = new THREE.Mesh(browGeo, browMat2);
+        brow.rotation.z = Math.PI / 2 + side * 0.2; brow.position.set(side * 0.105, 1.67, 0.26); avatarGroup.add(brow);
+        const brow2 = brow.clone(); brow2.position.y += 0.005; brow2.position.z -= 0.005; avatarGroup.add(brow2);
       });
 
-      // --- Nose ---
-      const nose = new THREE.Mesh(
-        new THREE.ConeGeometry(0.025, 0.06, 8),
-        new THREE.MeshStandardMaterial({ color: SKIN_DARK, roughness: 0.8 })
-      );
-      nose.rotation.x = -0.2;
-      nose.position.set(0, 1.52, 0.28);
-      avatarGroup.add(nose);
-
-      // --- Mouth ---
-      const mouthGeo = new THREE.SphereGeometry(0.04, 16, 8);
-      const mouthMat2 = new THREE.MeshStandardMaterial({ color: LIP, roughness: 0.5, metalness: 0.1 });
-      mouthMesh = new THREE.Mesh(mouthGeo, mouthMat2);
-      mouthMesh.scale.set(1.6, 0.5, 0.5);
-      mouthMesh.position.set(0, 1.44, 0.26);
-      avatarGroup.add(mouthMesh);
-
-      // --- Neck ---
-      const neck = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.12, 0.2, 16),
-        new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 })
-      );
-      neck.position.set(0, 1.25, 0);
-      avatarGroup.add(neck);
-
-      // --- Body (medical coat) ---
-      const coatMat = new THREE.MeshStandardMaterial({ color: 0xFAFAFA, roughness: 0.6, metalness: 0.05 });
-
-      // Torso
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.7, 16), coatMat);
-      torso.position.set(0, 0.8, 0);
-      avatarGroup.add(torso);
-
-      // Shoulders
-      const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), coatMat);
-      shoulders.position.set(0, 1.15, 0);
-      shoulders.rotation.x = Math.PI;
-      avatarGroup.add(shoulders);
-
-      // Arms
+      const noseBridge = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.1, 8), skinMat);
+      noseBridge.position.set(0, 1.54, 0.28); noseBridge.rotation.x = -0.15; avatarGroup.add(noseBridge);
+      const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.025, 12, 12), skinDarkMat);
+      noseTip.scale.set(1.2, 0.8, 0.9); noseTip.position.set(0, 1.49, 0.31); avatarGroup.add(noseTip);
       [-1, 1].forEach(side => {
-        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.55, 12), coatMat);
-        arm.position.set(side * 0.35, 0.85, 0);
-        arm.rotation.z = side * 0.15;
-        avatarGroup.add(arm);
-
-        // Hand
-        const hand = new THREE.Mesh(
-          new THREE.SphereGeometry(0.06, 12, 12),
-          new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 })
-        );
-        hand.scale.set(0.8, 1, 0.7);
-        hand.position.set(side * 0.38, 0.55, 0.05);
-        avatarGroup.add(hand);
+        const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), new THREE.MeshStandardMaterial({ color: 0xD4A090, roughness: 0.8 }));
+        nostril.position.set(side * 0.015, 1.48, 0.3); avatarGroup.add(nostril);
       });
 
-      // Stethoscope hint (rose gold pendant)
-      const pendant = new THREE.Mesh(
-        new THREE.TorusGeometry(0.04, 0.008, 8, 32),
-        new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.9, roughness: 0.1 })
-      );
-      pendant.position.set(0.05, 1.05, 0.22);
-      pendant.rotation.x = Math.PI / 2;
-      avatarGroup.add(pendant);
+      upperLipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.038, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), lipMat);
+      upperLipMesh.scale.set(1.8, 0.5, 0.6); upperLipMesh.position.set(0, 1.435, 0.27); upperLipMesh.rotation.x = Math.PI; avatarGroup.add(upperLipMesh);
+      lowerLipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.035, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), lipMat);
+      lowerLipMesh.scale.set(1.6, 0.45, 0.55); lowerLipMesh.position.set(0, 1.43, 0.27); avatarGroup.add(lowerLipMesh);
+      mouthMesh = new THREE.Mesh(new THREE.SphereGeometry(0.025, 16, 16), new THREE.MeshBasicMaterial({ color: 0x3a1520 }));
+      mouthMesh.scale.set(2, 0.3, 0.5); mouthMesh.position.set(0, 1.43, 0.265); avatarGroup.add(mouthMesh);
+      const lipLine = new THREE.Mesh(new THREE.CylinderGeometry(0.001, 0.001, 0.06, 4), new THREE.MeshBasicMaterial({ color: 0x8B3A4A }));
+      lipLine.rotation.z = Math.PI / 2; lipLine.position.set(0, 1.435, 0.275); avatarGroup.add(lipLine);
 
-      // Name tag
-      const tag = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.15, 0.06),
-        new THREE.MeshBasicMaterial({ color: ROSE, transparent: true, opacity: 0.8 })
-      );
-      tag.position.set(-0.12, 1.0, 0.26);
-      avatarGroup.add(tag);
+      [-1, 1].forEach(side => {
+        const smile = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.002, 8, 12, Math.PI * 0.6), new THREE.MeshStandardMaterial({ color: SKIN_DARK, roughness: 0.8, transparent: true, opacity: 0.4 }));
+        smile.position.set(side * 0.08, 1.44, 0.24); smile.rotation.y = side * 0.3; smile.rotation.z = side * -0.5; avatarGroup.add(smile);
+      });
 
-      // Lower body
-      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.5, 16), coatMat);
-      skirt.position.set(0, 0.4, 0);
-      avatarGroup.add(skirt);
+      [-1, 1].forEach(side => {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), skinMat);
+        ear.scale.set(0.5, 1, 0.6); ear.position.set(side * 0.32, 1.56, 0.02); avatarGroup.add(ear);
+        const earring = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.95, roughness: 0.05 }));
+        earring.position.set(side * 0.33, 1.51, 0.03); avatarGroup.add(earring);
+      });
 
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.22, 24), skinMat);
+      neck.position.set(0, 1.26, 0); avatarGroup.add(neck);
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.32, 0.7, 24), coatMat);
+      torso.position.set(0, 0.8, 0); avatarGroup.add(torso);
+      const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), coatMat);
+      shoulders.position.set(0, 1.15, 0); shoulders.rotation.x = Math.PI; avatarGroup.add(shoulders);
+      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.02, 8, 24, Math.PI), coatMat);
+      collar.position.set(0, 1.18, 0.1); collar.rotation.x = 0.3; avatarGroup.add(collar);
+
+      [-1, 1].forEach(side => {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.55, 16), coatMat);
+        arm.position.set(side * 0.37, 0.85, 0); arm.rotation.z = side * 0.15; avatarGroup.add(arm);
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 16), skinMat);
+        hand.scale.set(0.8, 1, 0.7); hand.position.set(side * 0.4, 0.55, 0.05); avatarGroup.add(hand);
+      });
+
+      const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.005, 8, 32, Math.PI), new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.95, roughness: 0.05 }));
+      necklace.position.set(0, 1.22, 0.12); necklace.rotation.x = 0.4; avatarGroup.add(necklace);
+      const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.95, roughness: 0.05, emissive: ROSE, emissiveIntensity: 0.3 }));
+      pendant.position.set(0, 1.15, 0.18); avatarGroup.add(pendant);
+      const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.065), new THREE.MeshBasicMaterial({ color: ROSE, transparent: true, opacity: 0.85 }));
+      tag.position.set(-0.13, 1.0, 0.28); avatarGroup.add(tag);
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.5, 24), coatMat);
+      skirt.position.set(0, 0.4, 0); avatarGroup.add(skirt);
       scene.add(avatarGroup);
     }
 
-    // === FLOATING DECOR ===
+    function create3DSocialIcons() {
+      const iconDefs = [
+        { name: 'WhatsApp', color: WA_GREEN, url: 'https://wa.me/972501234567', x: -1.4, symbol: 'wa' },
+        { name: 'Instagram', color: IG_PURPLE, url: 'https://instagram.com/glowclinic', x: -0.7, symbol: 'ig' },
+        { name: 'Facebook', color: FB_BLUE, url: 'https://facebook.com/glowclinic', x: 0.7, symbol: 'fb' },
+        { name: 'אתר', color: GLOBE_CYAN, url: 'https://glowclinic.co.il', x: 1.4, symbol: 'web' },
+      ];
+      iconDefs.forEach((def, i) => {
+        const group = new THREE.Group();
+        const glowMat = new THREE.MeshStandardMaterial({ color: def.color, transparent: true, opacity: 0.15, emissive: def.color, emissiveIntensity: 0.3 });
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(0.2, 24, 24), glowMat);
+        group.add(glow);
+        const coreMat = new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.2, metalness: 0.6, emissive: def.color, emissiveIntensity: 0.15 });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(0.12, 32, 32), coreMat);
+        group.add(core);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.6 });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.008, 8, 32), ringMat);
+        ring.rotation.x = Math.PI / 2; group.add(ring);
+        const orbitRing = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.003, 8, 48), new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.3 }));
+        group.add(orbitRing);
+        group.position.set(def.x, -0.15, 1.5);
+        group.position.y = -3; group.scale.set(0.01, 0.01, 0.01);
+        scene.add(group);
+        socialIcons.push({ mesh: core, group: group, url: def.url, name: def.name, baseX: def.x, baseY: -0.15, phase: i * Math.PI / 2, clickPulse: 0, glowMesh: glow, ring: ring, orbitRing: orbitRing, entranceDelay: 0.8 + i * 0.15 });
+      });
+    }
+
+    function createVideoPlayButton() {
+      const group = new THREE.Group();
+      const diamondMat = new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.85, roughness: 0.1, emissive: ROSE, emissiveIntensity: 0.25 });
+      const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0), diamondMat);
+      group.add(diamond);
+      const glowMat = new THREE.MeshStandardMaterial({ color: ROSE, transparent: true, opacity: 0.12, emissive: ROSE, emissiveIntensity: 0.4 });
+      const glow = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), glowMat);
+      group.add(glow);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.005, 8, 48), new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.9, roughness: 0.05, transparent: true, opacity: 0.5 }));
+      group.add(ring);
+      group.position.set(0, 2.3, 0.5);
+      group.position.y = -3; group.scale.set(0.01, 0.01, 0.01);
+      scene.add(group);
+      videoPlayObj = { mesh: diamond, group: group, glow: glow, ring: ring, baseY: 2.3, entranceDelay: 1.5 };
+    }
+
     function createFloatingDecor() {
-      // Rose gold torus rings around avatar
-      [1.2, 0.9].forEach((r, i) => {
-        const mat = new THREE.MeshStandardMaterial({
-          color: ROSE, metalness: 0.9, roughness: 0.1,
-          emissive: ROSE, emissiveIntensity: 0.15,
-          transparent: true, opacity: 0.6 - i * 0.15
-        });
-        const torus = new THREE.Mesh(new THREE.TorusGeometry(r, 0.02 + i * 0.01, 16, 100), mat);
-        torus.position.set(0, 0.8, 0);
-        torus.rotation.x = Math.PI / 3 + i * 0.5;
+      [1.3, 1.0, 0.7].forEach((r, i) => {
+        const mat = new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.9, roughness: 0.1, emissive: ROSE, emissiveIntensity: 0.12, transparent: true, opacity: 0.5 - i * 0.12 });
+        const torus = new THREE.Mesh(new THREE.TorusGeometry(r, 0.015 + i * 0.008, 16, 100), mat);
+        torus.position.set(0, 0.8, 0); torus.rotation.x = Math.PI / 3 + i * 0.5;
         scene.add(torus);
-        floatingObjects.push({ mesh: torus, type: 'ring', speed: 0.2 + i * 0.1, phase: i });
+        floatingObjects.push({ mesh: torus, type: 'ring', speed: 0.15 + i * 0.08, phase: i });
       });
 
-      // Beauty bubbles
       const bubbleColors = [ROSE, ROSE_LIGHT, PINK, 0xffffff, CREAM];
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 22; i++) {
         const r = Math.random() * 0.06 + 0.02;
         const c = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
-        const mat = new THREE.MeshStandardMaterial({
-          color: c, metalness: 0.5, roughness: 0.3,
-          emissive: c, emissiveIntensity: 0.1,
-          transparent: true, opacity: Math.random() * 0.5 + 0.2,
-        });
+        const mat = new THREE.MeshStandardMaterial({ color: c, metalness: 0.5, roughness: 0.3, emissive: c, emissiveIntensity: 0.08, transparent: true, opacity: Math.random() * 0.4 + 0.15 });
         const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 16), mat);
         const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 1.5 + 0.8;
-        sphere.position.set(Math.cos(angle) * dist, Math.random() * 2.5, Math.sin(angle) * dist);
+        const dist = Math.random() * 1.8 + 0.7;
+        sphere.position.set(Math.cos(angle) * dist, Math.random() * 3, Math.sin(angle) * dist);
         scene.add(sphere);
-        floatingObjects.push({
-          mesh: sphere, type: 'bubble',
-          baseY: sphere.position.y,
-          speed: Math.random() * 0.4 + 0.2,
-          phase: Math.random() * Math.PI * 2
-        });
+        floatingObjects.push({ mesh: sphere, type: 'bubble', baseY: sphere.position.y, speed: Math.random() * 0.4 + 0.2, phase: Math.random() * Math.PI * 2 });
       }
 
-      // Orbiting crystals
-      for (let i = 0; i < 4; i++) {
-        const mat = new THREE.MeshStandardMaterial({
-          color: i % 2 === 0 ? ROSE : 0xffffff,
-          metalness: 0.9, roughness: 0.1,
-          emissive: ROSE, emissiveIntensity: 0.1,
-        });
-        const crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat);
+      for (let i = 0; i < 6; i++) {
+        const mat = new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? ROSE : 0xffffff, metalness: 0.9, roughness: 0.1, emissive: ROSE, emissiveIntensity: 0.08 });
+        const crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.04, 0), mat);
         scene.add(crystal);
-        floatingObjects.push({
-          mesh: crystal, type: 'crystal',
-          orbitRadius: 1.5 + i * 0.2,
-          orbitSpeed: 0.25 + i * 0.05,
-          orbitPhase: (i / 4) * Math.PI * 2,
-          orbitY: 0.8 + Math.sin(i) * 0.4
-        });
+        floatingObjects.push({ mesh: crystal, type: 'crystal', orbitRadius: 1.4 + i * 0.15, orbitSpeed: 0.2 + i * 0.04, orbitPhase: (i / 6) * Math.PI * 2, orbitY: 0.7 + Math.sin(i) * 0.5 });
       }
 
-      // Falling petals
-      for (let i = 0; i < 10; i++) {
-        const mat = new THREE.MeshBasicMaterial({
-          color: Math.random() > 0.5 ? ROSE : PINK,
-          transparent: true, opacity: Math.random() * 0.3 + 0.1,
-          side: THREE.DoubleSide,
-        });
-        const petal = new THREE.Mesh(new THREE.CircleGeometry(0.04 + Math.random() * 0.03, 8), mat);
+      for (let i = 0; i < 15; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? ROSE : PINK, transparent: true, opacity: Math.random() * 0.25 + 0.08, side: THREE.DoubleSide });
+        const petal = new THREE.Mesh(new THREE.CircleGeometry(0.035 + Math.random() * 0.03, 8), mat);
         const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 2 + 0.5;
-        petal.position.set(Math.cos(angle) * dist, Math.random() * 3 + 1, Math.sin(angle) * dist);
+        const dist = Math.random() * 2.5 + 0.5;
+        petal.position.set(Math.cos(angle) * dist, Math.random() * 4 + 1, Math.sin(angle) * dist);
         petal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
         scene.add(petal);
-        floatingObjects.push({
-          mesh: petal, type: 'petal',
-          fallSpeed: Math.random() * 0.003 + 0.001,
-          phase: Math.random() * Math.PI * 2
-        });
+        floatingObjects.push({ mesh: petal, type: 'petal', fallSpeed: Math.random() * 0.003 + 0.001, phase: Math.random() * Math.PI * 2 });
       }
     }
 
-    // === SPARKLE PARTICLES ===
     function createSparkles() {
-      const count = 200;
+      const count = 300;
       const positions = new Float32Array(count * 3);
       const colors = new Float32Array(count * 3);
-      const roseRGB = { r: 183/255, g: 110/255, b: 121/255 };
-
+      const rRGB = { r: 183/255, g: 110/255, b: 121/255 };
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * 3 + 0.3;
+        const dist = Math.random() * 3.5 + 0.3;
         positions[i*3] = Math.cos(angle) * dist;
-        positions[i*3+1] = Math.random() * 4 - 0.5;
+        positions[i*3+1] = Math.random() * 4.5 - 0.5;
         positions[i*3+2] = Math.sin(angle) * dist;
-        const useRose = Math.random() > 0.5;
-        colors[i*3] = useRose ? roseRGB.r : 1;
-        colors[i*3+1] = useRose ? roseRGB.g : 0.96;
-        colors[i*3+2] = useRose ? roseRGB.b : 0.94;
+        const useRose = Math.random() > 0.4;
+        colors[i*3] = useRose ? rRGB.r : 1;
+        colors[i*3+1] = useRose ? rRGB.g : 0.96;
+        colors[i*3+2] = useRose ? rRGB.b : 0.94;
       }
-
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-      const points = new THREE.Points(geo, new THREE.PointsMaterial({
-        size: 0.025, vertexColors: true, transparent: true, opacity: 0.5,
-        blending: THREE.AdditiveBlending, depthWrite: false,
-      }));
+      const points = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.02, vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
       scene.add(points);
       particleSystems.push(points);
     }
 
-    // === SPEECH CYCLING ===
+    function createGlowRays() {
+      for (let i = 0; i < 5; i++) {
+        const mat = new THREE.MeshBasicMaterial({ color: ROSE, transparent: true, opacity: 0.03, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        const ray = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 6), mat);
+        ray.position.set(0, 1.5, 0); ray.rotation.y = (i / 5) * Math.PI;
+        scene.add(ray);
+        floatingObjects.push({ mesh: ray, type: 'ray', phase: i, speed: 0.05 });
+      }
+    }
+
     function cycleSpeech() {
       speechIndex = (speechIndex + 1) % speeches.length;
       const el = document.getElementById('speech-text');
-      el.style.opacity = 0;
-      setTimeout(() => {
-        el.textContent = speeches[speechIndex];
-        el.style.opacity = 1;
-      }, 300);
+      el.style.transition = 'opacity 0.3s'; el.style.opacity = 0;
+      setTimeout(() => { el.textContent = speeches[speechIndex]; el.style.opacity = 1; }, 300);
     }
 
-    // === ANIMATION LOOP ===
+    function openVideo() {
+      const modal = document.getElementById('video-modal');
+      modal.classList.add('show');
+      createDemoVideoCanvas();
+    }
+    function closeVideo() {
+      const modal = document.getElementById('video-modal');
+      modal.classList.remove('show');
+      const vid = document.getElementById('demo-video');
+      vid.pause(); vid.srcObject = null;
+    }
+    function createDemoVideoCanvas() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640; canvas.height = 360;
+      const ctx = canvas.getContext('2d');
+      let frame = 0;
+      const totalFrames = 150;
+      const slides = [
+        { text: '✨ Glow Clinic ✨', sub: 'סטודיו לטיפוח ויופי', bg: '#1a0f15' },
+        { text: '💆‍♀️ טיפולי פנים', sub: 'ניקוי עמוק · חידוש · זוהר', bg: '#1a1520' },
+        { text: '🔬 טכנולוגיה מתקדמת', sub: 'לייזר · IPL · RF', bg: '#15101a' },
+        { text: '🌿 מוצרים אורגניים', sub: '100% טבעי ובריא', bg: '#101a15' },
+        { text: '📞 קבעי תור עוד היום!', sub: '+972-50-123-4567', bg: '#1a0f15' },
+      ];
+      function drawFrame() {
+        if (frame >= totalFrames) { closeVideo(); return; }
+        const slideIdx = Math.min(Math.floor(frame / 30), slides.length - 1);
+        const slide = slides[slideIdx];
+        const intraFrame = (frame % 30) / 30;
+        ctx.fillStyle = slide.bg; ctx.fillRect(0, 0, 640, 360);
+        for (let i = 0; i < 20; i++) {
+          const x = (Math.sin(frame * 0.05 + i * 1.3) + 1) * 320;
+          const y = (Math.cos(frame * 0.03 + i * 0.7) + 1) * 180;
+          ctx.beginPath(); ctx.arc(x, y, 2 + Math.sin(frame * 0.1 + i) * 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(183, 110, 121, ' + (0.2 + Math.sin(frame * 0.1 + i) * 0.15) + ')';
+          ctx.fill();
+        }
+        const alpha = Math.min(intraFrame * 3, 1);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#ffffff'; ctx.font = '32px Georgia, serif'; ctx.textAlign = 'center';
+        ctx.fillText(slide.text, 320, 160);
+        ctx.fillStyle = '#B76E79'; ctx.font = '18px sans-serif';
+        ctx.fillText(slide.sub, 320, 200);
+        ctx.strokeStyle = '#B76E79'; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
+        const lineW = 100 * alpha;
+        ctx.beginPath(); ctx.moveTo(320 - lineW, 220); ctx.lineTo(320 + lineW, 220); ctx.stroke();
+        ctx.globalAlpha = 1; frame++;
+        requestAnimationFrame(drawFrame);
+      }
+      const stream = canvas.captureStream(30);
+      const vid = document.getElementById('demo-video');
+      vid.srcObject = stream; vid.play(); frame = 0; drawFrame();
+    }
+
+    function animateEntrance(t) {
+      if (introAnimDone) return;
+      if (avatarGroup) {
+        const avatarDelay = 0.3; const dur = 1.2;
+        const prog = Math.min(Math.max((t - avatarDelay) / dur, 0), 1);
+        const ease = 1 - Math.pow(1 - prog, 3);
+        avatarGroup.position.y = -3 + ((-0.3) - (-3)) * ease;
+        avatarGroup.scale.setScalar(0.01 + 0.99 * ease);
+        avatarGroup.rotation.y = (1 - ease) * Math.PI * 2;
+      }
+      socialIcons.forEach(si => {
+        const dur = 0.8;
+        const prog = Math.min(Math.max((t - si.entranceDelay) / dur, 0), 1);
+        const ease = 1 - Math.pow(1 - prog, 4);
+        si.group.position.y = -3 + (si.baseY - (-3)) * ease;
+        si.group.scale.setScalar(0.01 + 0.99 * ease);
+      });
+      if (videoPlayObj) {
+        const dur = 0.8;
+        const prog = Math.min(Math.max((t - videoPlayObj.entranceDelay) / dur, 0), 1);
+        const ease = 1 - Math.pow(1 - prog, 4);
+        videoPlayObj.group.position.y = -3 + (videoPlayObj.baseY - (-3)) * ease;
+        videoPlayObj.group.scale.setScalar(0.01 + 0.99 * ease);
+      }
+      if (t > 2.5) introAnimDone = true;
+    }
+
     function animate() {
       requestAnimationFrame(animate);
       const t = clock.getElapsedTime();
-
-      // Camera movement — gyro or touch
+      if (!introAnimDone) animateEntrance(t);
       if (gyroEnabled) {
         const targetX = (deviceGamma || 0) / 90 * 1.5;
         const targetY = 0.8 + ((deviceBeta || 0) - 45) / 90 * 0.5;
@@ -762,58 +833,70 @@
         camera.position.y += (0.8 - (window._touchY || 0) * 0.2 - camera.position.y) * 0.03;
       }
       camera.lookAt(0, 0.7, 0);
-
-      // Avatar breathing + sway
-      if (avatarGroup) {
+      if (avatarGroup && introAnimDone) {
         avatarGroup.position.y = -0.3 + Math.sin(t * 1.2) * 0.02;
         avatarGroup.rotation.y = Math.sin(t * 0.3) * 0.08;
       }
-
-      // Mouth talking animation
-      if (mouthMesh) {
+      if (mouthMesh && introAnimDone) {
         const talkSpeed = 8;
-        const openAmount = 0.5 + Math.abs(Math.sin(t * talkSpeed)) * 0.8;
+        const openAmount = 0.3 + Math.abs(Math.sin(t * talkSpeed)) * 0.7;
         mouthMesh.scale.y = openAmount;
+        if (upperLipMesh) upperLipMesh.position.y = 1.435 + Math.abs(Math.sin(t * talkSpeed)) * 0.005;
+        if (lowerLipMesh) lowerLipMesh.position.y = 1.43 - Math.abs(Math.sin(t * talkSpeed)) * 0.004;
       }
-
-      // Blink
       if (leftEyeLid && rightEyeLid) {
-        const blinkCycle = t % 4;
-        const isBlinking = blinkCycle > 3.8 && blinkCycle < 4.0;
+        const blinkCycle = t % 3.5;
+        const isBlinking = blinkCycle > 3.2 && blinkCycle < 3.45;
         leftEyeLid.visible = isBlinking;
         rightEyeLid.visible = isBlinking;
       }
-
-      // Floating objects
-      floatingObjects.forEach(obj => {
-        switch(obj.type) {
-          case 'ring':
-            obj.mesh.rotation.y = t * obj.speed;
-            obj.mesh.rotation.z = Math.sin(t * 0.3 + obj.phase) * 0.1;
-            break;
-          case 'bubble':
-            obj.mesh.position.y = obj.baseY + Math.sin(t * obj.speed + obj.phase) * 0.2;
-            break;
-          case 'crystal':
-            const a = t * obj.orbitSpeed + obj.orbitPhase;
-            obj.mesh.position.x = Math.cos(a) * obj.orbitRadius;
-            obj.mesh.position.z = Math.sin(a) * obj.orbitRadius;
-            obj.mesh.position.y = obj.orbitY + Math.sin(t * 0.5 + obj.orbitPhase) * 0.15;
-            obj.mesh.rotation.x = t * 0.5;
-            break;
-          case 'petal':
-            obj.mesh.position.y -= obj.fallSpeed;
-            obj.mesh.rotation.x += 0.004;
-            obj.mesh.rotation.z += 0.003;
-            obj.mesh.position.x += Math.sin(t + obj.phase) * 0.002;
-            if (obj.mesh.position.y < -0.5) obj.mesh.position.y = 3.5;
-            break;
+      socialIcons.forEach(si => {
+        if (!introAnimDone) return;
+        const bobY = si.baseY + Math.sin(t * 1.2 + si.phase) * 0.08;
+        si.group.position.y = bobY;
+        si.group.rotation.y = t * 0.5 + si.phase;
+        si.orbitRing.rotation.x = t * 0.8 + si.phase;
+        si.orbitRing.rotation.z = t * 0.3;
+        si.ring.rotation.z = t * 0.4 + si.phase;
+        si.glowMesh.material.opacity = 0.1 + Math.sin(t * 2 + si.phase) * 0.08;
+        if (si.clickPulse > 0) {
+          si.group.scale.setScalar(1 + si.clickPulse * 0.3);
+          si.clickPulse -= 0.05;
+          if (si.clickPulse < 0) si.clickPulse = 0;
+        } else {
+          const breathe = 1 + Math.sin(t * 1.5 + si.phase) * 0.05;
+          si.group.scale.setScalar(breathe);
         }
       });
-
-      // Sparkle rotation
-      particleSystems.forEach(p => { p.rotation.y = t * 0.015; });
-
+      if (videoPlayObj && introAnimDone) {
+        videoPlayObj.group.position.y = videoPlayObj.baseY + Math.sin(t * 0.8) * 0.1;
+        videoPlayObj.mesh.rotation.x = t * 0.6;
+        videoPlayObj.mesh.rotation.y = t * 0.8;
+        videoPlayObj.ring.rotation.x = t * 1.2;
+        videoPlayObj.ring.rotation.y = t * 0.6;
+        videoPlayObj.glow.material.opacity = 0.08 + Math.sin(t * 2.5) * 0.06;
+      }
+      floatingObjects.forEach(obj => {
+        switch(obj.type) {
+          case 'ring': obj.mesh.rotation.y = t * obj.speed; obj.mesh.rotation.z = Math.sin(t * 0.3 + obj.phase) * 0.1; break;
+          case 'bubble': obj.mesh.position.y = obj.baseY + Math.sin(t * obj.speed + obj.phase) * 0.2; break;
+          case 'crystal':
+            const ca = t * obj.orbitSpeed + obj.orbitPhase;
+            obj.mesh.position.x = Math.cos(ca) * obj.orbitRadius;
+            obj.mesh.position.z = Math.sin(ca) * obj.orbitRadius;
+            obj.mesh.position.y = obj.orbitY + Math.sin(t * 0.5 + obj.orbitPhase) * 0.15;
+            obj.mesh.rotation.x = t * 0.5; obj.mesh.rotation.y = t * 0.7; break;
+          case 'petal':
+            obj.mesh.position.y -= obj.fallSpeed;
+            obj.mesh.rotation.x += 0.004; obj.mesh.rotation.z += 0.003;
+            obj.mesh.position.x += Math.sin(t + obj.phase) * 0.002;
+            if (obj.mesh.position.y < -0.5) obj.mesh.position.y = 4; break;
+          case 'ray':
+            obj.mesh.rotation.y = t * obj.speed + obj.phase * (Math.PI / 5);
+            obj.mesh.material.opacity = 0.02 + Math.sin(t * 0.5 + obj.phase) * 0.015; break;
+        }
+      });
+      particleSystems.forEach(p => { p.rotation.y = t * 0.012; });
       renderer.render(scene, camera);
     }
 
@@ -823,9 +906,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // === vCard ===
     function downloadVCard() {
-      const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:Dr. Maya Cohen\nN:Cohen;Maya;Dr.;;\nORG:Glow Clinic\nTITLE:Founder & Lead Aesthetician\nTEL;TYPE=CELL:+972-50-123-4567\nEMAIL:info@glowclinic.co.il\nURL:https://glowclinic.co.il\nADR;TYPE=WORK:;;Tel Aviv;;Israel\nNOTE:Beauty & Skincare Studio\nEND:VCARD`;
+      const vcard = 'BEGIN:VCARD\nVERSION:3.0\nFN:ד״ר מאיה כהן\nN:כהן;מאיה;ד״ר;;\nORG:Glow Clinic\nTITLE:מייסדת ומנהלת מקצועית\nTEL;TYPE=CELL:+972-50-123-4567\nEMAIL:info@glowclinic.co.il\nURL:https://glowclinic.co.il\nADR;TYPE=WORK:;;תל אביב;;ישראל\nNOTE:סטודיו לטיפוח ויופי — Glow Clinic\nEND:VCARD';
       const blob = new Blob([vcard], { type: 'text/vcard' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -834,17 +916,11 @@
       document.body.removeChild(a); URL.revokeObjectURL(url);
     }
 
-    // === INIT ===
     async function start() {
-      // Start 3D scene immediately (don't wait for camera)
       initScene();
       initGyro();
-
-      // Try camera in parallel
       const camOk = await initCamera();
-
       if (!camOk) {
-        // Show subtle banner, tap to retry
         const banner = document.getElementById('no-camera-banner');
         banner.classList.add('show');
         banner.addEventListener('click', async () => {
@@ -852,9 +928,7 @@
           if (retry) banner.classList.remove('show');
         });
       }
-
-      // Hide loading
-      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 1200);
+      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 1500);
       animate();
     }
 
