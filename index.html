@@ -1,873 +1,864 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glow Clinic AR - Dr. Maya Cohen</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>Glow Clinic — AR Experience</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      background: #000;
+      color: white;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      touch-action: none;
+    }
 
-        body {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0a0a0a;
-        }
+    /* Camera feed */
+    #camera-feed {
+      position: fixed; inset: 0; z-index: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
 
-        #cameraFeed {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1;
-        }
+    /* 3D Canvas — transparent overlay */
+    #ar-canvas {
+      position: fixed; inset: 0; z-index: 1;
+      width: 100%; height: 100%;
+    }
 
-        #glowCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-        }
+    /* Loading */
+    #loading {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a0f15 50%, #0a0a0f 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 1s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .loader-ring {
+      width: 70px; height: 70px;
+      border: 3px solid rgba(183, 110, 121, 0.15);
+      border-top-color: #B76E79;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loader-text { margin-top: 20px; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #B76E79; }
+    .loader-sub { margin-top: 8px; font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        .ui-overlay {
-            position: absolute;
-            z-index: 10;
-            pointer-events: auto;
-        }
+    /* No-camera banner (non-blocking) */
+    #no-camera-banner {
+      display: none;
+      position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(183,110,121,0.15);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(183,110,121,0.2);
+      border-radius: 12px; padding: 8px 16px;
+      font-size: 10px; color: rgba(255,255,255,0.6);
+      letter-spacing: 0.5px; text-align: center;
+      animation: fade-in 1s ease-out;
+    }
+    #no-camera-banner.show { display: block; }
 
-        .top-bar {
-            top: 16px;
-            left: 16px;
-            right: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    /* UI Overlay */
+    .ui-overlay {
+      position: fixed; inset: 0; z-index: 10;
+      pointer-events: none;
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+    }
 
-        .clinic-header {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 12px 20px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
+    /* Top bar */
+    .top-bar { display: flex; justify-content: center; padding: 16px; pointer-events: auto; }
+    .clinic-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(183, 110, 121, 0.2);
+      border-radius: 100px; padding: 8px 18px;
+    }
+    .badge-glow {
+      width: 7px; height: 7px; background: #B76E79; border-radius: 50%;
+      box-shadow: 0 0 10px rgba(183, 110, 121, 0.6);
+      animation: pulse-glow 2s infinite;
+    }
+    @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 10px rgba(183,110,121,0.6); } 50% { box-shadow: 0 0 20px rgba(183,110,121,0.2); } }
+    .badge-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: #B76E79; }
 
-        .control-buttons {
-            display: flex;
-            gap: 12px;
-        }
+    /* Center — clinic name floating */
+    .center-float {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      pointer-events: none; padding: 0 20px;
+    }
+    .clinic-name {
+      font-size: clamp(32px, 9vw, 56px);
+      font-weight: 100; letter-spacing: 6px;
+      text-transform: uppercase; color: white;
+      text-shadow: 0 0 30px rgba(183,110,121,0.4), 0 2px 10px rgba(0,0,0,0.5);
+      animation: name-float 4s ease-in-out infinite;
+      direction: ltr;
+    }
+    .clinic-name span { color: #B76E79; font-weight: 300; }
+    @keyframes name-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .clinic-tagline {
+      font-size: 11px; letter-spacing: 5px; text-transform: uppercase;
+      color: rgba(183,110,121,0.7); margin-top: 6px;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+      direction: ltr;
+    }
 
-        .btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            color: white;
-            font-size: 20px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    /* Info card — glassmorphism */
+    .info-card {
+      background: rgba(10, 10, 15, 0.5);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(183, 110, 121, 0.12);
+      border-radius: 20px; padding: 20px 28px;
+      margin-top: 20px; text-align: center;
+      max-width: 340px; pointer-events: auto;
+      animation: card-up 0.8s ease-out 0.5s backwards;
+      direction: ltr;
+    }
+    @keyframes card-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .info-card .owner-name { font-size: 18px; font-weight: 300; }
+    .info-card .owner-title { font-size: 10px; color: #B76E79; margin-top: 3px; letter-spacing: 2px; text-transform: uppercase; }
+    .info-divider { width: 40px; height: 1px; background: linear-gradient(to right, transparent, #B76E79, transparent); margin: 10px auto; }
+    .info-card .services { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; line-height: 1.5; }
 
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
+    /* Bottom panel */
+    .bottom-panel {
+      padding: 0 16px 20px;
+      pointer-events: auto;
+    }
 
-        .speech-bubble {
-            position: absolute;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 16px 24px;
-            border-radius: 16px;
-            max-width: 280px;
-            text-align: center;
-            color: #333;
-            font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            white-space: normal;
-            word-wrap: break-word;
-        }
+    /* Speech bubble */
+    .speech-bubble {
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(183,110,121,0.15);
+      border-radius: 16px; padding: 12px 18px;
+      margin-bottom: 14px; text-align: center;
+      animation: fade-in 0.6s ease-out 2s backwards;
+      direction: ltr;
+    }
+    .speech-bubble p {
+      font-size: 13px; color: rgba(255,255,255,0.8);
+      font-weight: 300; line-height: 1.5;
+    }
+    .speech-bubble .speaker { font-size: 10px; color: #B76E79; margin-bottom: 4px; letter-spacing: 1px; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(255, 255, 255, 0.95);
-        }
+    /* Social bar */
+    .social-bar { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
+    .social-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .social-btn {
+      width: 46px; height: 46px; border-radius: 50%; border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.3s; text-decoration: none;
+    }
+    .social-btn:active { transform: scale(0.9); }
+    .social-label { font-size: 8px; color: rgba(255,255,255,0.3); }
+    .btn-ig { background: linear-gradient(135deg, #833AB4, #FD1D1D, #F77737); }
+    .btn-wa { background: #25D366; }
+    .btn-phone { background: rgba(183,110,121,0.2); border: 1px solid rgba(183,110,121,0.3); }
+    .btn-web { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+    .btn-vcard { background: rgba(183,110,121,0.12); border: 1px solid rgba(183,110,121,0.25); }
 
-        .bottom-bar {
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
+    /* Action row */
+    .action-row { display: flex; gap: 8px; justify-content: center; }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 12px; letter-spacing: 0.5px; cursor: pointer;
+      text-decoration: none; transition: all 0.3s;
+    }
+    .action-btn.primary { background: #B76E79; color: white; border: none; }
+    .action-btn.secondary { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.12); }
 
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-            transition: all 0.3s ease;
-        }
+    .footer-text {
+      text-align: center; margin-top: 10px;
+      font-size: 8px; letter-spacing: 2px;
+      color: rgba(255,255,255,0.12); text-transform: uppercase; direction: ltr;
+    }
 
-        .social-icon:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: scale(1.1);
-        }
-
-        .info-panel {
-            position: absolute;
-            bottom: 80px;
-            right: 20px;
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 16px;
-            border-radius: 12px;
-            color: white;
-            max-width: 200px;
-            text-align: center;
-        }
-
-        .info-panel h3 {
-            font-size: 12px;
-            margin-bottom: 8px;
-            opacity: 0.8;
-        }
-
-        .info-panel p {
-            font-size: 11px;
-            line-height: 1.4;
-            opacity: 0.9;
-        }
-
-        .permission-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .permission-dialog {
-            background: white;
-            padding: 32px;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 300px;
-        }
-
-        .permission-dialog h2 {
-            color: #333;
-            margin-bottom: 16px;
-            font-size: 18px;
-        }
-
-        .permission-dialog p {
-            color: #666;
-            margin-bottom: 24px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .permission-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        .permission-btn {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .permission-btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .permission-btn-primary:hover {
-            background: #5a67d8;
-        }
-
-        .permission-btn-secondary {
-            background: #e2e8f0;
-            color: #333;
-        }
-
-        .permission-btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        @media (max-width: 480px) {
-            .clinic-header {
-                font-size: 12px;
-                padding: 8px 12px;
-            }
-
-            .speech-bubble {
-                max-width: 200px;
-                font-size: 12px;
-                padding: 12px 16px;
-            }
-
-            .info-panel {
-                max-width: 160px;
-                padding: 12px;
-                right: 12px;
-                bottom: 70px;
-            }
-        }
-    </style>
+    /* SVG icon helper */
+    .icon-svg { width: 18px; height: 18px; }
+  </style>
 </head>
 <body>
-    <video id="cameraFeed" autoplay playsinline muted></video>
-    <canvas id="glowCanvas"></canvas>
 
-    <div class="ui-overlay top-bar">
-        <div class="clinic-header">✨ Glow Clinic AR</div>
-        <div class="control-buttons">
-            <button class="btn" id="flipCameraBtn" title="Flip Camera">📷</button>
-            <button class="btn" id="downloadVCardBtn" title="Download Contact">📥</button>
+  <!-- Loading Screen -->
+  <div id="loading">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Glow Clinic</div>
+    <div class="loader-sub">Initializing AR Camera...</div>
+  </div>
+
+  <!-- No Camera Banner (non-blocking) -->
+  <div id="no-camera-banner">AR works best with camera — tap to enable</div>
+
+  <!-- Camera Video Feed -->
+  <video id="camera-feed" autoplay playsinline muted></video>
+
+  <!-- Three.js AR Canvas -->
+  <canvas id="ar-canvas"></canvas>
+
+  <!-- UI Overlay -->
+  <div class="ui-overlay">
+    <div class="top-bar">
+      <div class="clinic-badge">
+        <div class="badge-glow"></div>
+        <span class="badge-label">AR Live</span>
+      </div>
+    </div>
+
+    <div class="center-float">
+      <div class="clinic-name"><span>Glow</span> Clinic</div>
+      <div class="clinic-tagline">Beauty &amp; Skincare Studio</div>
+
+      <div class="info-card">
+        <div class="owner-name">Dr. Maya Cohen</div>
+        <div class="owner-title">Founder &amp; Lead Aesthetician</div>
+        <div class="info-divider"></div>
+        <div class="services">
+          Facial Treatments · Skin Rejuvenation · Anti-Aging<br>
+          Laser Therapy · Hydrafacial · Dermaplaning
         </div>
+      </div>
     </div>
 
-    <div class="ui-overlay speech-bubble" id="speechBubble">
-        Hello! I'm Dr. Maya Cohen
+    <div class="bottom-panel">
+      <div class="speech-bubble" id="speech-bubble">
+        <div class="speaker">Dr. Maya</div>
+        <p id="speech-text">Welcome to Glow Clinic! I specialize in advanced skincare treatments for radiant, youthful skin.</p>
+      </div>
+
+      <div class="social-bar">
+        <div class="social-item">
+          <a class="social-btn btn-ig" href="https://instagram.com/glowclinic" target="_blank">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          </a>
+          <span class="social-label">Instagram</span>
+        </div>
+        <div class="social-item">
+          <a class="social-btn btn-wa" href="https://wa.me/972501234567" target="_blank">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </a>
+          <span class="social-label">WhatsApp</span>
+        </div>
+        <div class="social-item">
+          <a class="social-btn btn-phone" href="tel:+972501234567">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="#B76E79"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></svg>
+          </a>
+          <span class="social-label">Call</span>
+        </div>
+        <div class="social-item">
+          <a class="social-btn btn-web" href="https://glowclinic.co.il" target="_blank">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          </a>
+          <span class="social-label">Website</span>
+        </div>
+        <div class="social-item">
+          <button class="social-btn btn-vcard" onclick="downloadVCard()">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="#B76E79"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+          </button>
+          <span class="social-label">Save</span>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <a class="action-btn primary" href="https://wa.me/972501234567?text=%D7%94%D7%99%D7%99%20%D7%A8%D7%90%D7%99%D7%AA%D7%99%20%D7%90%D7%AA%20%D7%94%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20AR%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%95%D7%A2%20%D7%AA%D7%95%D7%A8" target="_blank">Book Now</a>
+        <a class="action-btn secondary" href="https://glowclinic.co.il" target="_blank">Our Website</a>
+      </div>
+
+      <div class="footer-text">Powered by JoyaTech · AR Business Card</div>
     </div>
+  </div>
 
-    <div class="ui-overlay bottom-bar">
-        <a href="https://instagram.com" class="social-icon" title="Instagram">📷</a>
-        <a href="https://facebook.com" class="social-icon" title="Facebook">👍</a>
-        <a href="https://tiktok.com" class="social-icon" title="TikTok">🎵</a>
-    </div>
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ==========================================
+    // GLOW CLINIC — WebAR with Camera
+    // Rose Gold + White | 3D Talking Avatar
+    // ==========================================
 
-    <div class="ui-overlay info-panel">
-        <h3>Dr. Maya Cohen</h3>
-        <p>Aesthetic Medicine Specialist</p>
-        <p>📧 maya@glowclinic.com</p>
-    </div>
+    const ROSE = 0xB76E79;
+    const ROSE_LIGHT = 0xD4A0A7;
+    const CREAM = 0xFFF5F0;
+    const PINK = 0xE8B4B8;
+    const SKIN = 0xF5D0C5;
+    const SKIN_DARK = 0xE8B8A8;
+    const HAIR_DARK = 0x2C1810;
+    const HAIR_LIGHT = 0x4A2C20;
+    const LIP = 0xC45B6E;
+    const EYE_WHITE = 0xFAFAFA;
+    const IRIS = 0x4A7043;
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // ============================================
-        // CAMERA INITIALIZATION & SETUP
-        // ============================================
-        const cameraFeed = document.getElementById('cameraFeed');
-        const glowCanvas = document.getElementById('glowCanvas');
-        const ctx = glowCanvas.getContext('2d');
-        let currentCamera = 'user'; // 'user' for front, 'environment' for rear
+    let scene, camera, renderer, clock;
+    let avatar, avatarGroup;
+    let mouthMesh, leftEyeLid, rightEyeLid;
+    let floatingObjects = [];
+    let particleSystems = [];
+    let speechIndex = 0;
+    let gyroEnabled = false;
+    let deviceAlpha = 0, deviceBeta = 0, deviceGamma = 0;
 
-        // Resize canvas to match window
-        function resizeCanvas() {
-            glowCanvas.width = window.innerWidth;
-            glowCanvas.height = window.innerHeight;
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+    const speeches = [
+      "Welcome to Glow Clinic! I specialize in advanced skincare treatments for radiant, youthful skin.",
+      "Our signature Hydrafacial treatment deeply cleanses and rejuvenates your skin in just 30 minutes.",
+      "We use only premium organic products. Your skin deserves the best care possible.",
+      "Book your free consultation today! Tap the WhatsApp button below to get started.",
+      "Anti-aging doesn't have to be complicated. Let me create a personalized plan just for you."
+    ];
 
-        // Initialize camera
-        async function initializeCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: currentCamera,
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    },
-                    audio: false
-                });
-                cameraFeed.srcObject = stream;
-                await new Promise(resolve => {
-                    cameraFeed.onloadedmetadata = () => {
-                        cameraFeed.play();
-                        resolve();
-                    };
-                });
-                initializeAR();
-            } catch (err) {
-                console.error('Camera error:', err);
-                // Try fallback camera
-                if (currentCamera === 'environment') {
-                    currentCamera = 'user';
-                    initializeCamera();
-                } else {
-                    showPermissionDialog();
-                }
-            }
-        }
+    // === CAMERA SETUP ===
+    // Priority: rear camera (environment) → any camera → fallback dark bg
+    async function initCamera() {
+      const video = document.getElementById('camera-feed');
 
-        // Permission dialog
-        function showPermissionDialog() {
-            const overlay = document.createElement('div');
-            overlay.className = 'permission-overlay';
-            overlay.innerHTML = `
-                <div class="permission-dialog">
-                    <h2>Camera Access Required</h2>
-                    <p>This AR experience needs camera access to work.</p>
-                    <div class="permission-buttons">
-                        <button class="permission-btn permission-btn-primary" onclick="location.reload()">Try Again</button>
-                        <button class="permission-btn permission-btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Cancel</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-        }
+      // Check if getUserMedia is available (HTTPS required)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('getUserMedia not supported — fallback mode');
+        video.style.display = 'none';
+        document.body.style.background = 'linear-gradient(135deg, #0a0a0f, #1a0f15)';
+        return false;
+      }
 
-        // Flip camera
-        document.getElementById('flipCameraBtn').addEventListener('click', () => {
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            if (cameraFeed.srcObject) {
-                cameraFeed.srcObject.getTracks().forEach(track => track.stop());
-            }
-            initializeCamera();
+      // Attempt 1: rear camera (environment) — what we want
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
         });
-
-        // ============================================
-        // THREE.JS AR SCENE SETUP
-        // ============================================
-        let scene, camera, renderer, avatar, decorations = [];
-        let avatarAnimation = {
-            breathingPhase: 0,
-            mouthOpen: 0,
-            blinkPhase: 0,
-            swayAngle: 0
-        };
-
-        function initializeAR() {
-            // Scene setup
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 3;
-
-            renderer = new THREE.WebGLRenderer({ canvas: glowCanvas, alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setClearColor(0x000000, 0);
-            renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
-            // Create avatar and decorations
-            avatar = createAvatar();
-            scene.add(avatar);
-
-            createDecorations();
-            createParticleSystem();
-
-            // Device orientation
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+
-                document.addEventListener('click', () => {
-                    DeviceOrientationEvent.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            window.addEventListener('deviceorientation', handleDeviceOrientation);
-                        }
-                    }).catch(console.error);
-                }, { once: true });
-            } else {
-                // Non-iOS or older iOS
-                window.addEventListener('deviceorientation', handleDeviceOrientation);
-            }
-
-            // Touch controls
-            document.addEventListener('touchmove', handleTouchMove, false);
-
-            // Animation loop
-            animate();
-        }
-
-        // ============================================
-        // AVATAR CREATION
-        // ============================================
-        function createAvatar() {
-            const group = new THREE.Group();
-            group.position.y = 0;
-
-            // Head
-            const headGeometry = new THREE.SphereGeometry(0.4, 32, 32);
-            const skinMaterial = new THREE.MeshStandardMaterial({
-                color: 0xfdbcb4,
-                roughness: 0.4,
-                metalness: 0.0
-            });
-            const head = new THREE.Mesh(headGeometry, skinMaterial);
-            head.position.y = 0.4;
-            head.castShadow = true;
-            group.add(head);
-
-            // Hair - Top
-            const hairTopGeometry = new THREE.SphereGeometry(0.42, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
-            const hairMaterial = new THREE.MeshStandardMaterial({
-                color: 0x4a3728,
-                roughness: 0.7,
-                metalness: 0.1
-            });
-            const hairTop = new THREE.Mesh(hairTopGeometry, hairMaterial);
-            hairTop.position.y = 0.6;
-            group.add(hairTop);
-
-            // Hair - Back
-            const hairBackGeometry = new THREE.ConeGeometry(0.35, 0.8, 32);
-            const hairBack = new THREE.Mesh(hairBackGeometry, hairMaterial);
-            hairBack.position.set(0, 0.1, -0.3);
-            hairBack.scale.set(1, 1, 0.6);
-            group.add(hairBack);
-
-            // Hair - Sides
-            const hairSideGeometry = new THREE.SphereGeometry(0.15, 16, 16);
-            const hairLeft = new THREE.Mesh(hairSideGeometry, hairMaterial);
-            hairLeft.position.set(-0.45, 0.3, 0);
-            hairLeft.scale.set(0.8, 1.2, 0.7);
-            group.add(hairLeft);
-
-            const hairRight = hairLeft.clone();
-            hairRight.position.x = 0.45;
-            group.add(hairRight);
-
-            // Hair - Bangs
-            const bangsGeometry = new THREE.SphereGeometry(0.2, 16, 16, 0, Math.PI, 0, Math.PI / 2.5);
-            const bangs = new THREE.Mesh(bangsGeometry, hairMaterial);
-            bangs.position.set(0, 0.5, 0.35);
-            bangs.scale.set(1.5, 0.8, 0.5);
-            group.add(bangs);
-
-            // Eyes - White
-            const eyeWhiteGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-            const eyeWhiteMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const eyeLeftWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
-            eyeLeftWhite.position.set(-0.12, 0.55, 0.35);
-            group.add(eyeLeftWhite);
-
-            const eyeRightWhite = eyeLeftWhite.clone();
-            eyeRightWhite.position.x = 0.12;
-            group.add(eyeRightWhite);
-
-            // Eyes - Iris
-            const irisGeometry = new THREE.SphereGeometry(0.045, 16, 16);
-            const irisMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4423 });
-            const irisLeft = new THREE.Mesh(irisGeometry, irisMaterial);
-            irisLeft.position.set(-0.12, 0.55, 0.41);
-            group.add(irisLeft);
-
-            const irisRight = irisLeft.clone();
-            irisRight.position.x = 0.12;
-            group.add(irisRight);
-
-            // Eyes - Pupils
-            const pupilGeometry = new THREE.SphereGeometry(0.025, 16, 16);
-            const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-            const pupilLeft = new THREE.Mesh(pupilGeometry, pupilMaterial);
-            pupilLeft.position.set(-0.12, 0.55, 0.44);
-            group.add(pupilLeft);
-
-            const pupilRight = pupilLeft.clone();
-            pupilRight.position.x = 0.12;
-            group.add(pupilRight);
-
-            // Eye lids
-            const lidGeometry = new THREE.SphereGeometry(0.09, 16, 8, 0, Math.PI);
-            const lidMaterial = new THREE.MeshStandardMaterial({ color: 0xfdbcb4 });
-            const lidTop = new THREE.Mesh(lidGeometry, lidMaterial);
-            lidTop.position.set(0, 0.62, 0.35);
-            lidTop.scale.set(2, 0.8, 0.5);
-            group.add(lidTop);
-
-            // Eyebrows
-            const browGeometry = new THREE.SphereGeometry(0.06, 16, 8, 0, Math.PI);
-            const browMaterial = new THREE.MeshStandardMaterial({ color: 0x3a2818 });
-            const browLeft = new THREE.Mesh(browGeometry, browMaterial);
-            browLeft.position.set(-0.12, 0.68, 0.35);
-            browLeft.rotation.z = 0.3;
-            browLeft.scale.set(1.2, 0.6, 0.5);
-            group.add(browLeft);
-
-            const browRight = browLeft.clone();
-            browRight.position.x = 0.12;
-            browRight.rotation.z = -0.3;
-            group.add(browRight);
-
-            // Nose
-            const noseGeometry = new THREE.ConeGeometry(0.05, 0.15, 16);
-            const noseMaterial = new THREE.MeshStandardMaterial({ color: 0xf5a89f });
-            const nose = new THREE.Mesh(noseGeometry, noseMaterial);
-            nose.position.set(0, 0.45, 0.38);
-            nose.scale.set(1, 0.8, 0.6);
-            group.add(nose);
-
-            // Mouth
-            const mouthGeometry = new THREE.SphereGeometry(0.08, 16, 16, 0, Math.PI, 0, Math.PI / 2);
-            const mouthMaterial = new THREE.MeshStandardMaterial({ color: 0xe74c6d });
-            const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-            mouth.position.set(0, 0.32, 0.38);
-            mouth.scale.set(1, 0.3, 0.5);
-            mouth.userData.originalScale = { x: 1, y: 0.3, z: 0.5 };
-            group.add(mouth);
-
-            // Neck
-            const neckGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.2, 16);
-            const neckMaterial = new THREE.MeshStandardMaterial({ color: 0xfdbcb4 });
-            const neck = new THREE.Mesh(neckGeometry, neckMaterial);
-            neck.position.y = 0.05;
-            group.add(neck);
-
-            // Body - Medical coat
-            const coatGeometry = new THREE.CylinderGeometry(0.35, 0.4, 0.8, 16);
-            const coatMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const coat = new THREE.Mesh(coatGeometry, coatMaterial);
-            coat.position.y = -0.35;
-            group.add(coat);
-
-            // Arms
-            const armGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.6, 16);
-            const armMaterial = new THREE.MeshStandardMaterial({ color: 0xfdbcb4 });
-
-            const armLeft = new THREE.Mesh(armGeometry, armMaterial);
-            armLeft.position.set(-0.35, -0.1, 0);
-            armLeft.rotation.z = 0.3;
-            group.add(armLeft);
-
-            const armRight = armLeft.clone();
-            armRight.position.x = 0.35;
-            armRight.rotation.z = -0.3;
-            group.add(armRight);
-
-            // Hands
-            const handGeometry = new THREE.SphereGeometry(0.07, 16, 16);
-            const handMaterial = new THREE.MeshStandardMaterial({ color: 0xfdbcb4 });
-
-            const handLeft = new THREE.Mesh(handGeometry, handMaterial);
-            handLeft.position.set(-0.35, -0.45, 0);
-            group.add(handLeft);
-
-            const handRight = handLeft.clone();
-            handRight.position.x = 0.35;
-            group.add(handRight);
-
-            // Stethoscope pendant
-            const stethoscopeHeadGeometry = new THREE.TorusGeometry(0.15, 0.02, 8, 32);
-            const stethoscopeMaterial = new THREE.MeshStandardMaterial({ color: 0xd4af37 });
-            const stethoscopeHead = new THREE.Mesh(stethoscopeHeadGeometry, stethoscopeMaterial);
-            stethoscopeHead.position.set(0, -0.2, 0.3);
-            stethoscopeHead.rotation.x = Math.PI / 3;
-            group.add(stethoscopeHead);
-
-            // Name tag
-            const tagGeometry = new THREE.PlaneGeometry(0.3, 0.15);
-            const tagMaterial = new THREE.MeshStandardMaterial({ color: 0xfffacd });
-            const nameTag = new THREE.Mesh(tagGeometry, tagMaterial);
-            nameTag.position.set(0, -0.5, 0.35);
-            group.add(nameTag);
-
-            // Skirt
-            const skirtGeometry = new THREE.ConeGeometry(0.45, 0.6, 32);
-            const skirtMaterial = new THREE.MeshStandardMaterial({ color: 0x2a2a4a });
-            const skirt = new THREE.Mesh(skirtGeometry, skirtMaterial);
-            skirt.position.y = -0.8;
-            group.add(skirt);
-
-            group.userData.mouth = mouth;
-            return group;
-        }
-
-        // ============================================
-        // DECORATIONS & PARTICLES
-        // ============================================
-        function createDecorations() {
-            // Rose gold torus rings
-            for (let i = 0; i < 3; i++) {
-                const ringGeometry = new THREE.TorusGeometry(1.5 + i * 0.5, 0.08, 8, 100);
-                const ringMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xe8b4a8,
-                    metalness: 0.7,
-                    roughness: 0.2
-                });
-                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-                ring.rotation.x = Math.random() * Math.PI;
-                ring.rotation.y = Math.random() * Math.PI;
-                ring.userData.rotationSpeed = 0.2 + Math.random() * 0.3;
-                ring.userData.rotationAxis = new THREE.Vector3(
-                    Math.random() - 0.5,
-                    Math.random() - 0.5,
-                    Math.random() - 0.5
-                ).normalize();
-                scene.add(ring);
-                decorations.push(ring);
-            }
-
-            // Beauty bubbles
-            for (let i = 0; i < 5; i++) {
-                const bubbleGeometry = new THREE.IcosahedronGeometry(0.1 + Math.random() * 0.1, 4);
-                const bubbleMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xd4af37,
-                    metalness: 0.6,
-                    roughness: 0.3,
-                    transparent: true,
-                    opacity: 0.7
-                });
-                const bubble = new THREE.Mesh(bubbleGeometry, bubbleMaterial);
-                bubble.position.set(
-                    (Math.random() - 0.5) * 4,
-                    (Math.random() - 0.5) * 3,
-                    (Math.random() - 0.5) * 2
-                );
-                bubble.userData.floatSpeed = 0.3 + Math.random() * 0.5;
-                bubble.userData.floatPhase = Math.random() * Math.PI * 2;
-                scene.add(bubble);
-                decorations.push(bubble);
-            }
-
-            // Orbiting crystals
-            for (let i = 0; i < 4; i++) {
-                const crystalGeometry = new THREE.OctahedronGeometry(0.15, 2);
-                const crystalMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xc0ffee,
-                    metalness: 0.9,
-                    roughness: 0.1
-                });
-                const crystal = new THREE.Mesh(crystalGeometry, crystalMaterial);
-                crystal.position.set(
-                    Math.cos(i * Math.PI / 2) * 1.5,
-                    Math.sin(i * Math.PI / 2) * 1.5,
-                    0
-                );
-                crystal.userData.orbitRadius = 1.5;
-                crystal.userData.orbitSpeed = 0.3 + Math.random() * 0.2;
-                crystal.userData.orbitPhase = i * Math.PI / 2;
-                scene.add(crystal);
-                decorations.push(crystal);
-            }
-
-            // Falling petals
-            for (let i = 0; i < 6; i++) {
-                const petalGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-                const petalMaterial = new THREE.MeshStandardMaterial({ color: 0xffb6c1 });
-                const petal = new THREE.Mesh(petalGeometry, petalMaterial);
-                petal.position.set(
-                    (Math.random() - 0.5) * 3,
-                    2,
-                    (Math.random() - 0.5) * 2
-                );
-                petal.userData.fallSpeed = 0.2 + Math.random() * 0.3;
-                petal.userData.swayAmount = 0.5 + Math.random() * 0.5;
-                petal.userData.swaySpeed = 1 + Math.random() * 1;
-                scene.add(petal);
-                decorations.push(petal);
-            }
-        }
-
-        function createParticleSystem() {
-            const particleCount = 200;
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const colors = new Float32Array(particleCount * 3);
-
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 4;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 3;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
-
-                colors[i * 3] = 0.8 + Math.random() * 0.2;
-                colors[i * 3 + 1] = 0.6 + Math.random() * 0.3;
-                colors[i * 3 + 2] = 1;
-            }
-
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-            const material = new THREE.PointsMaterial({
-                size: 0.02,
-                vertexColors: true,
-                transparent: true,
-                blending: THREE.AdditiveBlending
-            });
-
-            const particles = new THREE.Points(geometry, material);
-            scene.add(particles);
-        }
-
-        // ============================================
-        // ANIMATION & INTERACTION
-        // ============================================
-        function handleDeviceOrientation(event) {
-            const alpha = event.alpha || 0;
-            const beta = event.beta || 0;
-            const gamma = event.gamma || 0;
-
-            camera.rotation.order = 'YXZ';
-            camera.rotation.y = THREE.MathUtils.degToRad(-alpha);
-            camera.rotation.x = THREE.MathUtils.degToRad(-beta);
-        }
-
-        function handleTouchMove(event) {
-            if (event.touches.length > 0) {
-                const touch = event.touches[0];
-                const x = (touch.clientX / window.innerWidth) * 2 - 1;
-                const y = -(touch.clientY / window.innerHeight) * 2 + 1;
-                camera.position.x = x * 0.5;
-                camera.position.y = y * 0.5;
-            }
-        }
-
-        let speechIndex = 0;
-        const speeches = [
-            "Hello! I'm Dr. Maya Cohen",
-            "Welcome to Glow Clinic!",
-            "Let's enhance your natural beauty",
-            "Medical-grade aesthetic solutions",
-            "Your confidence is my priority"
-        ];
-
-        function updateSpeech() {
-            const bubble = document.getElementById('speechBubble');
-            bubble.textContent = speeches[speechIndex];
-            speechIndex = (speechIndex + 1) % speeches.length;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Avatar breathing
-            avatarAnimation.breathingPhase += 0.01;
-            avatar.position.y = Math.sin(avatarAnimation.breathingPhase) * 0.05;
-
-            // Mouth animation
-            avatarAnimation.mouthOpen += 0.04;
-            const mouth = avatar.userData.mouth;
-            const openAmount = Math.abs(Math.sin(avatarAnimation.mouthOpen)) * 0.3;
-            mouth.scale.y = mouth.userData.originalScale.y + openAmount;
-
-            // Blinking
-            avatarAnimation.blinkPhase += 0.02;
-            if (Math.sin(avatarAnimation.blinkPhase) > 0.8) {
-                avatar.children[5].scale.y = 0.1; // Top lid blink
-            } else {
-                avatar.children[5].scale.y = 1;
-            }
-
-            // Avatar sway
-            avatarAnimation.swayAngle += 0.005;
-            avatar.rotation.z = Math.sin(avatarAnimation.swayAngle) * 0.1;
-
-            // Update decorations
-            decorations.forEach((dec, i) => {
-                if (dec.userData.rotationSpeed) {
-                    dec.rotateOnWorldAxis(dec.userData.rotationAxis, dec.userData.rotationSpeed * 0.01);
-                }
-                if (dec.userData.floatSpeed) {
-                    dec.position.y += Math.sin(Date.now() * 0.001 + dec.userData.floatPhase) * 0.01 * dec.userData.floatSpeed;
-                }
-                if (dec.userData.orbitSpeed) {
-                    dec.userData.orbitPhase += dec.userData.orbitSpeed * 0.01;
-                    dec.position.x = Math.cos(dec.userData.orbitPhase) * dec.userData.orbitRadius;
-                    dec.position.y = Math.sin(dec.userData.orbitPhase) * dec.userData.orbitRadius * 0.6;
-                }
-                if (dec.userData.fallSpeed) {
-                    dec.position.y -= dec.userData.fallSpeed * 0.01;
-                    dec.position.x += Math.sin(Date.now() * 0.001 * dec.userData.swaySpeed) * 0.01 * dec.userData.swayAmount;
-                    if (dec.position.y < -2) {
-                        dec.position.y = 2;
-                    }
-                }
-            });
-
-            // Change speech periodically
-            if (Math.random() < 0.01) {
-                updateSpeech();
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // vCard download
-        document.getElementById('downloadVCardBtn').addEventListener('click', () => {
-            const vcard = `BEGIN:VCARD
-VERSION:3.0
-FN:Dr. Maya Cohen
-TITLE:Aesthetic Medicine Specialist
-ORG:Glow Clinic
-TEL;TYPE=CELL:+972-50-XXX-XXXX
-EMAIL:maya@glowclinic.com
-URL:https://glowclinic.com
-NOTE:AR Experience Powered by WebAR
-END:VCARD`;
-
-            const blob = new Blob([vcard], { type: 'text/vcard' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'Dr_Maya_Cohen.vcf';
-            link.click();
-            URL.revokeObjectURL(url);
+        video.srcObject = stream;
+        await video.play();
+        console.log('Rear camera active');
+        return true;
+      } catch (err) {
+        console.warn('Rear camera attempt failed:', err.name);
+      }
+
+      // Attempt 2: any available camera (no facingMode constraint)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
         });
+        video.srcObject = stream;
+        await video.play();
+        console.log('Generic camera active');
+        return true;
+      } catch (err2) {
+        console.warn('Generic camera failed:', err2.name);
+      }
 
-        // Start the app
-        initializeCamera();
+      // Attempt 3: minimal constraints
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await video.play();
+        console.log('Minimal camera active');
+        return true;
+      } catch (err3) {
+        console.error('All camera attempts failed:', err3.name);
+        // Fallback: hide video, show dark gradient bg
+        video.style.display = 'none';
+        document.body.style.background = 'linear-gradient(135deg, #0a0a0f 0%, #1a0f15 50%, #0a0a0f 100%)';
+        // Don't show blocking error — 3D scene works without camera
+        return false;
+      }
+    }
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+    // === GYROSCOPE ===
+    function initGyro() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS 13+
+        document.body.addEventListener('click', function handler() {
+          DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === 'granted') { enableGyro(); }
+          });
+          document.body.removeEventListener('click', handler);
+        }, { once: true });
+      } else {
+        enableGyro();
+      }
+    }
+
+    function enableGyro() {
+      window.addEventListener('deviceorientation', (e) => {
+        gyroEnabled = true;
+        deviceAlpha = e.alpha || 0;
+        deviceBeta = e.beta || 0;
+        deviceGamma = e.gamma || 0;
+      });
+    }
+
+    // === THREE.JS SCENE ===
+    function initScene() {
+      clock = new THREE.Clock();
+
+      scene = new THREE.Scene();
+      // No background — camera shows through
+
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 0.8, 4);
+      camera.lookAt(0, 0.5, 0);
+
+      renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('ar-canvas'), alpha: true, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.3;
+
+      // Lighting for AR look
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+      const key = new THREE.DirectionalLight(0xffffff, 0.9);
+      key.position.set(3, 5, 5);
+      key.castShadow = false;
+      scene.add(key);
+
+      const rose = new THREE.PointLight(ROSE, 0.8, 15);
+      rose.position.set(-2, 3, 2);
+      scene.add(rose);
+
+      const fill = new THREE.PointLight(0xffffff, 0.3, 10);
+      fill.position.set(2, 1, 4);
+      scene.add(fill);
+
+      // Build everything
+      createAvatar();
+      createFloatingDecor();
+      createSparkles();
+
+      // Responsive
+      window.addEventListener('resize', onResize);
+
+      // Touch/mouse for camera movement
+      let touchX = 0, touchY = 0;
+      document.addEventListener('touchmove', e => {
+        touchX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+        touchY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+      });
+      document.addEventListener('mousemove', e => {
+        touchX = (e.clientX / window.innerWidth - 0.5) * 2;
+        touchY = (e.clientY / window.innerHeight - 0.5) * 2;
+      });
+
+      // Speech rotation
+      setInterval(cycleSpeech, 5000);
+
+      window._touchX = 0; window._touchY = 0;
+      setInterval(() => { window._touchX = touchX; window._touchY = touchY; }, 16);
+    }
+
+    // === 3D AVATAR — Stylized Woman ===
+    function createAvatar() {
+      avatarGroup = new THREE.Group();
+      avatarGroup.position.set(0, -0.3, 0);
+
+      // --- Head ---
+      const headGeo = new THREE.SphereGeometry(0.3, 32, 32);
+      headGeo.scale(1, 1.15, 1);
+      const headMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7, metalness: 0.05 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 1.55;
+      avatarGroup.add(head);
+
+      // --- Hair ---
+      const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_DARK, roughness: 0.8, metalness: 0.1 });
+
+      // Hair top
+      const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.32, 32, 32), hairMat);
+      hairTop.scale.set(1.05, 0.9, 1.05);
+      hairTop.position.set(0, 1.7, -0.02);
+      avatarGroup.add(hairTop);
+
+      // Hair back (long)
+      const hairBack = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.18, 0.8, 16), hairMat);
+      hairBack.position.set(0, 1.15, -0.12);
+      avatarGroup.add(hairBack);
+
+      // Hair sides
+      [-1, 1].forEach(side => {
+        const hairSide = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), hairMat);
+        hairSide.scale.set(0.6, 1.2, 0.8);
+        hairSide.position.set(side * 0.25, 1.45, 0.05);
+        avatarGroup.add(hairSide);
+      });
+
+      // Hair bangs
+      const bangsMat = new THREE.MeshStandardMaterial({ color: HAIR_LIGHT, roughness: 0.7 });
+      const bangs = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), bangsMat);
+      bangs.scale.set(1, 0.3, 0.5);
+      bangs.position.set(0.05, 1.72, 0.2);
+      avatarGroup.add(bangs);
+
+      // --- Eyes ---
+      const eyeMat = new THREE.MeshBasicMaterial({ color: EYE_WHITE });
+      const irisMat = new THREE.MeshBasicMaterial({ color: IRIS });
+      const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+      [-1, 1].forEach(side => {
+        // Eye white
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), eyeMat);
+        eye.scale.set(1.3, 0.9, 0.5);
+        eye.position.set(side * 0.1, 1.58, 0.25);
+        avatarGroup.add(eye);
+
+        // Iris
+        const iris = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), irisMat);
+        iris.position.set(side * 0.1, 1.58, 0.28);
+        avatarGroup.add(iris);
+
+        // Pupil
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), pupilMat);
+        pupil.position.set(side * 0.1, 1.58, 0.29);
+        avatarGroup.add(pupil);
+
+        // Eyelid (for blink)
+        const lidMat = new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 });
+        const lid = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), lidMat);
+        lid.scale.set(1.2, 0.8, 0.5);
+        lid.position.set(side * 0.1, 1.6, 0.24);
+        lid.rotation.x = Math.PI;
+        lid.visible = false;
+        avatarGroup.add(lid);
+        if (side === -1) leftEyeLid = lid;
+        else rightEyeLid = lid;
+
+        // Eyebrow
+        const browGeo = new THREE.CylinderGeometry(0.002, 0.002, 0.08, 8);
+        const browMat = new THREE.MeshBasicMaterial({ color: HAIR_DARK });
+        const brow = new THREE.Mesh(browGeo, browMat);
+        brow.rotation.z = Math.PI / 2 + side * 0.15;
+        brow.position.set(side * 0.1, 1.66, 0.26);
+        avatarGroup.add(brow);
+      });
+
+      // --- Nose ---
+      const nose = new THREE.Mesh(
+        new THREE.ConeGeometry(0.025, 0.06, 8),
+        new THREE.MeshStandardMaterial({ color: SKIN_DARK, roughness: 0.8 })
+      );
+      nose.rotation.x = -0.2;
+      nose.position.set(0, 1.52, 0.28);
+      avatarGroup.add(nose);
+
+      // --- Mouth ---
+      const mouthGeo = new THREE.SphereGeometry(0.04, 16, 8);
+      const mouthMat2 = new THREE.MeshStandardMaterial({ color: LIP, roughness: 0.5, metalness: 0.1 });
+      mouthMesh = new THREE.Mesh(mouthGeo, mouthMat2);
+      mouthMesh.scale.set(1.6, 0.5, 0.5);
+      mouthMesh.position.set(0, 1.44, 0.26);
+      avatarGroup.add(mouthMesh);
+
+      // --- Neck ---
+      const neck = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.12, 0.2, 16),
+        new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 })
+      );
+      neck.position.set(0, 1.25, 0);
+      avatarGroup.add(neck);
+
+      // --- Body (medical coat) ---
+      const coatMat = new THREE.MeshStandardMaterial({ color: 0xFAFAFA, roughness: 0.6, metalness: 0.05 });
+
+      // Torso
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.7, 16), coatMat);
+      torso.position.set(0, 0.8, 0);
+      avatarGroup.add(torso);
+
+      // Shoulders
+      const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), coatMat);
+      shoulders.position.set(0, 1.15, 0);
+      shoulders.rotation.x = Math.PI;
+      avatarGroup.add(shoulders);
+
+      // Arms
+      [-1, 1].forEach(side => {
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.55, 12), coatMat);
+        arm.position.set(side * 0.35, 0.85, 0);
+        arm.rotation.z = side * 0.15;
+        avatarGroup.add(arm);
+
+        // Hand
+        const hand = new THREE.Mesh(
+          new THREE.SphereGeometry(0.06, 12, 12),
+          new THREE.MeshStandardMaterial({ color: SKIN, roughness: 0.7 })
+        );
+        hand.scale.set(0.8, 1, 0.7);
+        hand.position.set(side * 0.38, 0.55, 0.05);
+        avatarGroup.add(hand);
+      });
+
+      // Stethoscope hint (rose gold pendant)
+      const pendant = new THREE.Mesh(
+        new THREE.TorusGeometry(0.04, 0.008, 8, 32),
+        new THREE.MeshStandardMaterial({ color: ROSE, metalness: 0.9, roughness: 0.1 })
+      );
+      pendant.position.set(0.05, 1.05, 0.22);
+      pendant.rotation.x = Math.PI / 2;
+      avatarGroup.add(pendant);
+
+      // Name tag
+      const tag = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.15, 0.06),
+        new THREE.MeshBasicMaterial({ color: ROSE, transparent: true, opacity: 0.8 })
+      );
+      tag.position.set(-0.12, 1.0, 0.26);
+      avatarGroup.add(tag);
+
+      // Lower body
+      const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.5, 16), coatMat);
+      skirt.position.set(0, 0.4, 0);
+      avatarGroup.add(skirt);
+
+      scene.add(avatarGroup);
+    }
+
+    // === FLOATING DECOR ===
+    function createFloatingDecor() {
+      // Rose gold torus rings around avatar
+      [1.2, 0.9].forEach((r, i) => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: ROSE, metalness: 0.9, roughness: 0.1,
+          emissive: ROSE, emissiveIntensity: 0.15,
+          transparent: true, opacity: 0.6 - i * 0.15
         });
-    </script>
+        const torus = new THREE.Mesh(new THREE.TorusGeometry(r, 0.02 + i * 0.01, 16, 100), mat);
+        torus.position.set(0, 0.8, 0);
+        torus.rotation.x = Math.PI / 3 + i * 0.5;
+        scene.add(torus);
+        floatingObjects.push({ mesh: torus, type: 'ring', speed: 0.2 + i * 0.1, phase: i });
+      });
+
+      // Beauty bubbles
+      const bubbleColors = [ROSE, ROSE_LIGHT, PINK, 0xffffff, CREAM];
+      for (let i = 0; i < 18; i++) {
+        const r = Math.random() * 0.06 + 0.02;
+        const c = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+        const mat = new THREE.MeshStandardMaterial({
+          color: c, metalness: 0.5, roughness: 0.3,
+          emissive: c, emissiveIntensity: 0.1,
+          transparent: true, opacity: Math.random() * 0.5 + 0.2,
+        });
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 16), mat);
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 1.5 + 0.8;
+        sphere.position.set(Math.cos(angle) * dist, Math.random() * 2.5, Math.sin(angle) * dist);
+        scene.add(sphere);
+        floatingObjects.push({
+          mesh: sphere, type: 'bubble',
+          baseY: sphere.position.y,
+          speed: Math.random() * 0.4 + 0.2,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+
+      // Orbiting crystals
+      for (let i = 0; i < 4; i++) {
+        const mat = new THREE.MeshStandardMaterial({
+          color: i % 2 === 0 ? ROSE : 0xffffff,
+          metalness: 0.9, roughness: 0.1,
+          emissive: ROSE, emissiveIntensity: 0.1,
+        });
+        const crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(0.05, 0), mat);
+        scene.add(crystal);
+        floatingObjects.push({
+          mesh: crystal, type: 'crystal',
+          orbitRadius: 1.5 + i * 0.2,
+          orbitSpeed: 0.25 + i * 0.05,
+          orbitPhase: (i / 4) * Math.PI * 2,
+          orbitY: 0.8 + Math.sin(i) * 0.4
+        });
+      }
+
+      // Falling petals
+      for (let i = 0; i < 10; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: Math.random() > 0.5 ? ROSE : PINK,
+          transparent: true, opacity: Math.random() * 0.3 + 0.1,
+          side: THREE.DoubleSide,
+        });
+        const petal = new THREE.Mesh(new THREE.CircleGeometry(0.04 + Math.random() * 0.03, 8), mat);
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 2 + 0.5;
+        petal.position.set(Math.cos(angle) * dist, Math.random() * 3 + 1, Math.sin(angle) * dist);
+        petal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        scene.add(petal);
+        floatingObjects.push({
+          mesh: petal, type: 'petal',
+          fallSpeed: Math.random() * 0.003 + 0.001,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    // === SPARKLE PARTICLES ===
+    function createSparkles() {
+      const count = 200;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const roseRGB = { r: 183/255, g: 110/255, b: 121/255 };
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 3 + 0.3;
+        positions[i*3] = Math.cos(angle) * dist;
+        positions[i*3+1] = Math.random() * 4 - 0.5;
+        positions[i*3+2] = Math.sin(angle) * dist;
+        const useRose = Math.random() > 0.5;
+        colors[i*3] = useRose ? roseRGB.r : 1;
+        colors[i*3+1] = useRose ? roseRGB.g : 0.96;
+        colors[i*3+2] = useRose ? roseRGB.b : 0.94;
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const points = new THREE.Points(geo, new THREE.PointsMaterial({
+        size: 0.025, vertexColors: true, transparent: true, opacity: 0.5,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }));
+      scene.add(points);
+      particleSystems.push(points);
+    }
+
+    // === SPEECH CYCLING ===
+    function cycleSpeech() {
+      speechIndex = (speechIndex + 1) % speeches.length;
+      const el = document.getElementById('speech-text');
+      el.style.opacity = 0;
+      setTimeout(() => {
+        el.textContent = speeches[speechIndex];
+        el.style.opacity = 1;
+      }, 300);
+    }
+
+    // === ANIMATION LOOP ===
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      // Camera movement — gyro or touch
+      if (gyroEnabled) {
+        const targetX = (deviceGamma || 0) / 90 * 1.5;
+        const targetY = 0.8 + ((deviceBeta || 0) - 45) / 90 * 0.5;
+        camera.position.x += (targetX - camera.position.x) * 0.05;
+        camera.position.y += (targetY - camera.position.y) * 0.05;
+      } else {
+        camera.position.x += ((window._touchX || 0) * 0.6 - camera.position.x) * 0.03;
+        camera.position.y += (0.8 - (window._touchY || 0) * 0.2 - camera.position.y) * 0.03;
+      }
+      camera.lookAt(0, 0.7, 0);
+
+      // Avatar breathing + sway
+      if (avatarGroup) {
+        avatarGroup.position.y = -0.3 + Math.sin(t * 1.2) * 0.02;
+        avatarGroup.rotation.y = Math.sin(t * 0.3) * 0.08;
+      }
+
+      // Mouth talking animation
+      if (mouthMesh) {
+        const talkSpeed = 8;
+        const openAmount = 0.5 + Math.abs(Math.sin(t * talkSpeed)) * 0.8;
+        mouthMesh.scale.y = openAmount;
+      }
+
+      // Blink
+      if (leftEyeLid && rightEyeLid) {
+        const blinkCycle = t % 4;
+        const isBlinking = blinkCycle > 3.8 && blinkCycle < 4.0;
+        leftEyeLid.visible = isBlinking;
+        rightEyeLid.visible = isBlinking;
+      }
+
+      // Floating objects
+      floatingObjects.forEach(obj => {
+        switch(obj.type) {
+          case 'ring':
+            obj.mesh.rotation.y = t * obj.speed;
+            obj.mesh.rotation.z = Math.sin(t * 0.3 + obj.phase) * 0.1;
+            break;
+          case 'bubble':
+            obj.mesh.position.y = obj.baseY + Math.sin(t * obj.speed + obj.phase) * 0.2;
+            break;
+          case 'crystal':
+            const a = t * obj.orbitSpeed + obj.orbitPhase;
+            obj.mesh.position.x = Math.cos(a) * obj.orbitRadius;
+            obj.mesh.position.z = Math.sin(a) * obj.orbitRadius;
+            obj.mesh.position.y = obj.orbitY + Math.sin(t * 0.5 + obj.orbitPhase) * 0.15;
+            obj.mesh.rotation.x = t * 0.5;
+            break;
+          case 'petal':
+            obj.mesh.position.y -= obj.fallSpeed;
+            obj.mesh.rotation.x += 0.004;
+            obj.mesh.rotation.z += 0.003;
+            obj.mesh.position.x += Math.sin(t + obj.phase) * 0.002;
+            if (obj.mesh.position.y < -0.5) obj.mesh.position.y = 3.5;
+            break;
+        }
+      });
+
+      // Sparkle rotation
+      particleSystems.forEach(p => { p.rotation.y = t * 0.015; });
+
+      renderer.render(scene, camera);
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // === vCard ===
+    function downloadVCard() {
+      const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:Dr. Maya Cohen\nN:Cohen;Maya;Dr.;;\nORG:Glow Clinic\nTITLE:Founder & Lead Aesthetician\nTEL;TYPE=CELL:+972-50-123-4567\nEMAIL:info@glowclinic.co.il\nURL:https://glowclinic.co.il\nADR;TYPE=WORK:;;Tel Aviv;;Israel\nNOTE:Beauty & Skincare Studio\nEND:VCARD`;
+      const blob = new Blob([vcard], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Dr_Maya_Cohen_Glow_Clinic.vcf';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    // === INIT ===
+    async function start() {
+      // Start 3D scene immediately (don't wait for camera)
+      initScene();
+      initGyro();
+
+      // Try camera in parallel
+      const camOk = await initCamera();
+
+      if (!camOk) {
+        // Show subtle banner, tap to retry
+        const banner = document.getElementById('no-camera-banner');
+        banner.classList.add('show');
+        banner.addEventListener('click', async () => {
+          const retry = await initCamera();
+          if (retry) banner.classList.remove('show');
+        });
+      }
+
+      // Hide loading
+      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 1200);
+      animate();
+    }
+
+    window.addEventListener('DOMContentLoaded', start);
+  </script>
 </body>
 </html>
