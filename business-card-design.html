@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glow Clinic — Business Card Design</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #2a2a3a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 40px; gap: 40px;
+    }
+    h1 { color: white; font-size: 14px; opacity: 0.5; letter-spacing: 2px; text-transform: uppercase; }
+    .card-container { width: 1050px; height: 600px; }
+    .card-front {
+      width: 1050px; height: 600px;
+      background: linear-gradient(135deg, #1a0f15 0%, #2a1520 40%, #1a0f15 100%);
+      border-radius: 24px; position: relative; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .card-front::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 25% 50%, rgba(183,110,121,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 30%, rgba(212,160,167,0.06) 0%, transparent 40%); }
+    .accent-line { position: absolute; left: 60px; top: 80px; bottom: 80px; width: 2px; background: linear-gradient(to bottom, transparent, #B76E79, transparent); }
+    .ar-badge { position: absolute; top: 50px; right: 60px; display: flex; align-items: center; gap: 6px; background: rgba(183,110,121,0.12); border: 1px solid rgba(183,110,121,0.25); border-radius: 20px; padding: 6px 14px; }
+    .ar-badge-dot { width: 6px; height: 6px; background: #B76E79; border-radius: 50%; animation: ar-pulse 2s infinite; }
+    .ar-badge-text { font-size: 10px; color: #B76E79; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+    @keyframes ar-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .logo-area { position: absolute; top: 55px; left: 90px; display: flex; align-items: center; gap: 16px; }
+    .logo-circle { width: 56px; height: 56px; border: 2px solid #B76E79; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(183,110,121,0.08); }
+    .logo-circle span { font-size: 24px; font-weight: 200; color: #B76E79; font-family: Georgia, serif; }
+    .logo-text .company { font-size: 28px; font-weight: 200; color: white; letter-spacing: 6px; text-transform: uppercase; }
+    .logo-text .tagline { font-size: 11px; color: #B76E79; letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+    .person-info { position: absolute; bottom: 100px; left: 90px; }
+    .person-name { font-size: 34px; font-weight: 200; color: white; letter-spacing: 2px; }
+    .person-title { font-size: 14px; color: #B76E79; margin-top: 4px; font-weight: 400; letter-spacing: 1px; }
+    .contact-strip { position: absolute; bottom: 40px; left: 90px; right: 90px; display: flex; gap: 32px; }
+    .contact-item { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.5); font-size: 12px; }
+    .contact-item .icon { color: #B76E79; font-size: 14px; }
+    .qr-area { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .qr-box { width: 140px; height: 140px; background: white; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(183,110,121,0.2); position: relative; }
+    .qr-box::after { content: 'SCAN FOR AR'; position: absolute; bottom: -28px; font-size: 9px; letter-spacing: 3px; color: rgba(255,255,255,0.3); }
+    .qr-placeholder { width: 110px; height: 110px; background: repeating-conic-gradient(#2a1520 0% 25%, white 0% 50%) 50% / 10px 10px; border-radius: 4px; }
+    .card-back { width: 1050px; height: 600px; background: linear-gradient(135deg, #1a0f15 0%, #2a1520 100%); border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 60px 80px; }
+    .service-item { text-align: center; padding: 20px; }
+    .service-icon { font-size: 28px; margin-bottom: 8px; }
+    .service-name { font-size: 13px; color: white; font-weight: 500; letter-spacing: 1px; }
+    .service-desc { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+    .back-footer { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; }
+    .back-footer .domain { font-size: 18px; color: #B76E79; letter-spacing: 4px; font-weight: 200; }
+    .back-footer .location { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: 8px; letter-spacing: 2px; }
+    .print-note { color: rgba(255,255,255,0.3); font-size: 11px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>FRONT</h1>
+  <div class="card-container">
+    <div class="card-front">
+      <div class="accent-line"></div>
+      <div class="ar-badge"><div class="ar-badge-dot"></div><span class="ar-badge-text">AR Enabled</span></div>
+      <div class="logo-area">
+        <div class="logo-circle"><span>G</span></div>
+        <div class="logo-text"><span class="company">Glow Clinic</span><span class="tagline">Beauty &amp; Skincare</span></div>
+      </div>
+      <div class="person-info"><div class="person-name">Dr. Maya Cohen</div><div class="person-title">Founder &amp; Lead Aesthetician</div></div>
+      <div class="contact-strip">
+        <div class="contact-item"><span class="icon">&#9742;</span><span>+972-50-123-4567</span></div>
+        <div class="contact-item"><span class="icon">&#9993;</span><span>info@glowclinic.co.il</span></div>
+        <div class="contact-item"><span class="icon">&#127760;</span><span>glowclinic.co.il</span></div>
+        <div class="contact-item"><span class="icon">&#128205;</span><span>Tel Aviv, Israel</span></div>
+      </div>
+      <div class="qr-area"><div class="qr-box"><div class="qr-placeholder"></div></div></div>
+    </div>
+  </div>
+  <h1>BACK</h1>
+  <div class="card-container">
+    <div class="card-back">
+      <div class="services-grid">
+        <div class="service-item"><div class="service-icon">&#10024;</div><div class="service-name">Facial Treatments</div><div class="service-desc">Deep cleansing &amp; Rejuvenation</div></div>
+        <div class="service-item"><div class="service-icon">&#128142;</div><div class="service-name">Anti-Aging</div><div class="service-desc">Collagen &amp; Elastin Therapy</div></div>
+        <div class="service-item"><div class="service-icon">&#127807;</div><div class="service-name">Organic Skincare</div><div class="service-desc">Natural &amp; Vegan Products</div></div>
+        <div class="service-item"><div class="service-icon">&#128161;</div><div class="service-name">Laser Therapy</div><div class="service-desc">IPL &amp; RF Technology</div></div>
+        <div class="service-item"><div class="service-icon">&#128167;</div><div class="service-name">Hydrafacial</div><div class="service-desc">Deep Hydration Treatment</div></div>
+        <div class="service-item"><div class="service-icon">&#127775;</div><div class="service-name">Dermaplaning</div><div class="service-desc">Smooth &amp; Radiant Skin</div></div>
+      </div>
+      <div class="back-footer"><div class="domain">glowclinic.co.il</div><div class="location">TEL AVIV &middot; ISRAEL</div></div>
+    </div>
+  </div>
+  <p class="print-note">Standard business card: 90x50mm (3.5x2in) — Scale before printing</p>
+</body>
+</html>
